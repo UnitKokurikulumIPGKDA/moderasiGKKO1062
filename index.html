@@ -53,7 +53,7 @@
       <div class="text-center border-b border-slate-100 pb-4">
         <span class="text-[10px] font-bold tracking-widest uppercase text-teal-600">IPG Kampus Darulaman</span>
         <h2 class="text-2xl font-display font-extrabold text-slate-900 mt-2">Moderasi Pintar</h2>
-        <p class="text-slate-500 mt-1 text-xs">GKKO1062</p>
+        <p class="text-slate-500 mt-1 text-xs">GKKO1062 / MPU3411</p>
       </div>
       <div class="flex flex-col gap-4">
         <div>
@@ -179,7 +179,6 @@
                   </div>
                   <div class="p-3 space-y-3.5 divide-y divide-slate-100">
                     
-                    <!-- Kriteria A1 -->
                     <div class="pt-2 first:pt-0">
                       <div class="flex justify-between items-start gap-2">
                         <div class="pr-2">
@@ -190,7 +189,6 @@
                       </div>
                     </div>
 
-                    <!-- Kriteria A2 -->
                     <div class="pt-3">
                       <div class="flex justify-between items-start gap-2">
                         <div class="pr-2">
@@ -201,7 +199,6 @@
                       </div>
                     </div>
 
-                    <!-- Kriteria B1 -->
                     <div class="pt-3">
                       <div class="flex justify-between items-start gap-2">
                         <div class="pr-2">
@@ -212,7 +209,6 @@
                       </div>
                     </div>
 
-                    <!-- Kriteria B2 -->
                     <div class="pt-3">
                       <div class="flex justify-between items-start gap-2">
                         <div class="pr-2">
@@ -223,7 +219,6 @@
                       </div>
                     </div>
 
-                    <!-- Kriteria B3 -->
                     <div class="pt-3">
                       <div class="flex justify-between items-start gap-2">
                         <div class="pr-2">
@@ -234,7 +229,6 @@
                       </div>
                     </div>
 
-                    <!-- Kriteria C1 -->
                     <div class="pt-3">
                       <div class="flex justify-between items-start gap-2">
                         <div class="pr-2">
@@ -245,7 +239,6 @@
                       </div>
                     </div>
 
-                    <!-- Kriteria C2 -->
                     <div class="pt-3">
                       <div class="flex justify-between items-start gap-2">
                         <div class="pr-2">
@@ -256,7 +249,6 @@
                       </div>
                     </div>
 
-                    <!-- Kriteria C3 -->
                     <div class="pt-3">
                       <div class="flex justify-between items-start gap-2">
                         <div class="pr-2">
@@ -276,7 +268,7 @@
           </div>
           <div class="p-4 bg-slate-50 border-t border-slate-200 shrink-0 flex flex-col gap-2">
             <button onclick="simpanRekodSemakan()" id="btnSimpanKerja" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3.5 rounded-lg transition-all shadow-md">Simpan Semakan</button>
-            <button onclick="cetakSkripDanContenganGlobal()" class="w-full bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold py-3.5 rounded-lg transition-all shadow-sm">Cetak Laporan Lengkap</button>
+            <button onclick="cetakSkripDanContenganGlobal()" class="w-full bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold py-3.5 rounded-lg transition-all shadow-sm">Cetak Laporan Lengkap Skrip</button>
           </div>
         </div>
       </section>
@@ -290,13 +282,22 @@
               <h2 class="text-2xl font-display font-bold text-slate-900 mt-0.5">Ringkasan Moderasi Pensyarah</h2>
               <p class="text-xs text-slate-500 mt-1">Status dan rekod rasmi semakan Fasa 1 (P1) dan Fasa 2 (P2) bagi akaun ini.</p>
             </div>
-            <div class="flex gap-2">
-              <button onclick="tarikDataDariSheets()" class="text-xs font-bold bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl hover:bg-slate-50 shadow-sm transition-all flex items-center gap-1.5">
+            
+            <!-- MENU DROPDOWN CETAKAN PENSYARAH -->
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="tarikDataDariSheets()" class="text-xs font-bold bg-white border border-slate-200 text-slate-700 px-3.5 py-2.5 rounded-xl hover:bg-slate-50 shadow-sm transition-all flex items-center gap-1.5">
                 <span>🔄</span> Segar Semula
               </button>
-              <button onclick="cetakRingkasanPensyarah()" class="text-xs font-bold bg-slate-900 hover:bg-black text-white px-5 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-1.5">
-                <span>🖨️</span> Cetak Laporan Ringkasan
-              </button>
+              
+              <div class="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-300 shadow-sm">
+                <select id="selectJenisCetakanLec" class="text-xs font-bold bg-transparent text-slate-800 rounded-lg px-2.5 py-2 focus:outline-none">
+                  <option value="lamPt0402">📄 Borang Moderasi Rasmi (LAM-PT-04-02)</option>
+                  <option value="ringkasan">🖨️ Laporan Ringkasan Penilaian Moderasi</option>
+                </select>
+                <button onclick="laksanaCetakanPilihan('selectJenisCetakanLec')" class="text-xs font-bold bg-slate-900 hover:bg-black text-white px-4 py-2 rounded-lg shadow transition-all flex items-center gap-1.5 shrink-0">
+                  <span>🖨️</span> Cetak Now
+                </button>
+              </div>
             </div>
           </div>
 
@@ -373,12 +374,25 @@
         <div class="max-w-6xl mx-auto space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-200 pb-4">
             <div>
-              <h2 class="text-2xl font-display font-bold text-slate-900">Pemantauan Moderasi</h2>
-              <p class="text-xs text-slate-500 mt-1">Papan Pemuka Penyelaras Kursus.</p>
+              <h2 class="text-2xl font-display font-bold text-slate-900">Pemantauan Moderasi Akademik</h2>
+              <p class="text-xs text-slate-500 mt-1">Papan Pemuka Penyelaras Kursus & Pentadbir Jabatan.</p>
             </div>
-            <div class="flex gap-2">
-              <button onclick="tarikDataDariSheets()" class="text-[10px] font-bold bg-white border border-slate-200 text-slate-700 px-3.5 py-2 rounded-xl hover:bg-slate-50 shadow-sm transition-all">🔄 Segar Semula</button>
-              <button onclick="cetakLaporanRumusanAdmin()" class="text-[10px] font-bold bg-slate-900 hover:bg-black text-white px-4 py-2 rounded-xl shadow-md transition-all flex items-center gap-1.5">🖨️ Cetak Laporan Rumusan Admin</button>
+            
+            <!-- MENU DROPDOWN CETAKAN ADMIN -->
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="tarikDataDariSheets()" class="text-xs font-bold bg-white border border-slate-200 text-slate-700 px-3.5 py-2.5 rounded-xl hover:bg-slate-50 shadow-sm transition-all flex items-center gap-1.5">
+                <span>🔄</span> Segar Semula
+              </button>
+              
+              <div class="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-300 shadow-sm">
+                <select id="selectJenisCetakanAdmin" class="text-xs font-bold bg-transparent text-slate-800 rounded-lg px-2.5 py-2 focus:outline-none">
+                  <option value="lamPt0402">📄 Borang Moderasi Rasmi (LAM-PT-04-02)</option>
+                  <option value="ringkasan">🖨️ Laporan Ringkasan Status Semakan Admin</option>
+                </select>
+                <button onclick="laksanaCetakanPilihan('selectJenisCetakanAdmin')" class="text-xs font-bold bg-slate-900 hover:bg-black text-white px-4 py-2 rounded-lg shadow transition-all flex items-center gap-1.5 shrink-0">
+                  <span>🖨️</span> Cetak Now
+                </button>
+              </div>
             </div>
           </div>
 
@@ -490,7 +504,7 @@
   <script>
     let urlAPI = 'https://script.google.com/macros/s/AKfycbzUcGDoRpgw0nY7R2RtTasnSBbUsO47zkRoeRg0j4KT4twLALp8YdmWWheinb0ym5zd/exec'; 
     let dataSesi = { email: '', nama: '', peranan: '', password: '' };
-    let dbPensyarah = [], dbSkripInduk = [], dbHasilSemakan = [];
+    let dbPensyarah = [], dbSkripInduk = [], dbHasilSemakan = [], dbKonfigurasi = {};
     let fasaSemasa = 'P1', pelajarAktif = null;
 
     let pdfDoc = null, pageNum = 1, pageTotal = 0;
@@ -586,7 +600,11 @@
 
     function tarikDataDariSheets() {
       fetch(urlAPI).then(r => r.json()).then(data => {
-        dbPensyarah = data.pensyarah || []; dbSkripInduk = data.skripInduk || []; dbHasilSemakan = data.hasilSemakan || [];
+        dbPensyarah = data.pensyarah || []; 
+        dbSkripInduk = data.skripInduk || []; 
+        dbHasilSemakan = data.hasilSemakan || [];
+        dbKonfigurasi = data.konfigurasi || {};
+        
         if(dataSesi.peranan === "Admin") {
           binaJadualPemantauanP2();
           binaJadualRumusanSemakan();
@@ -594,6 +612,198 @@
         binaSenaraiKerjaPensyarah();
         binaPapanRingkasanPensyarah();
       });
+    }
+
+    function laksanaCetakanPilihan(selectId) {
+      const sel = document.getElementById(selectId);
+      if (!sel) return;
+      const jenis = sel.value;
+      
+      if (jenis === 'lamPt0402') {
+        cetakBorangLamPt0402();
+      } else if (jenis === 'ringkasan') {
+        if (selectId === 'selectJenisCetakanAdmin') {
+          cetakLaporanRumusanAdmin();
+        } else {
+          cetakRingkasanPensyarah();
+        }
+      }
+    }
+
+    function cetakBorangLamPt0402() {
+      const printContainer = document.getElementById('bulkPrintContainer');
+      if (!printContainer) return;
+      printContainer.innerHTML = '';
+
+      const scripts = dbSkripInduk.length > 0 ? dbSkripInduk : [
+        { angkaGiliran: '2024182310152', markahPemeriksa: '86', fasaModerasi: 'P1' },
+        { angkaGiliran: '2024182310011', markahPemeriksa: '85', fasaModerasi: 'P1' },
+        { angkaGiliran: '2024182310142', markahPemeriksa: '85', fasaModerasi: 'P1' },
+        { angkaGiliran: '2024182310176', markahPemeriksa: '73', fasaModerasi: 'P1' },
+        { angkaGiliran: '2024182310191', markahPemeriksa: '73', fasaModerasi: 'P1' },
+        { angkaGiliran: '2024182310204', markahPemeriksa: '73', fasaModerasi: 'P1' },
+        { angkaGiliran: '2024182310068', markahPemeriksa: '9', fasaModerasi: 'P1' },
+        { angkaGiliran: '2024182310101', markahPemeriksa: '9', fasaModerasi: 'P1' },
+        { angkaGiliran: '2024182310053', markahPemeriksa: '9', fasaModerasi: 'P1' }
+      ];
+
+      let rowsHtml = '';
+      let lecturerDiffSum = {};
+      let lecturerDiffCount = {};
+
+      scripts.forEach((skrip, idx) => {
+        const reviews = dbHasilSemakan.filter(h => h.angkaGiliran.toString() === skrip.angkaGiliran.toString());
+        const p1Rev = reviews.find(r => r.fasaModerasi && r.fasaModerasi.includes('P1')) || reviews[0];
+        const p2Rev = reviews.find(r => r.fasaModerasi && r.fasaModerasi.includes('P2'));
+
+        let a = parseFloat(skrip.markahPemeriksa);
+        let b = p1Rev ? parseFloat(p1Rev.markahModerasiP1 || p1Rev.markahAkhir) : null;
+        let c = (b !== null && !isNaN(a) && !isNaN(b)) ? (b - a) : null;
+
+        let d = p2Rev ? parseFloat(p2Rev.markahModerasiP2 || p2Rev.markahAkhir) : null;
+        let e = (d !== null && !isNaN(a) && !isNaN(d)) ? (d - a) : null;
+
+        let f = (p1Rev && p1Rev.markahPenyelarasan !== undefined && p1Rev.markahPenyelarasan !== '') 
+                ? parseFloat(p1Rev.markahPenyelarasan) 
+                : (c !== null ? c : '');
+
+        let g = (p1Rev && p1Rev.markahAkhir) 
+                ? parseFloat(p1Rev.markahAkhir) 
+                : (!isNaN(a) ? (f !== '' && !isNaN(f) ? a + f : a) : '');
+
+        if (p1Rev && c !== null && !isNaN(c)) {
+          const lecName = p1Rev.emelPensyarah || 'Pemeriksa';
+          if (!lecturerDiffSum[lecName]) { lecturerDiffSum[lecName] = 0; lecturerDiffCount[lecName] = 0; }
+          lecturerDiffSum[lecName] += c;
+          lecturerDiffCount[lecName]++;
+        }
+
+        rowsHtml += `
+          <tr style="border-bottom: 1px solid #000; text-align: center;">
+            <td style="border: 1px solid #000; padding: 5px;">${idx + 1}</td>
+            <td style="border: 1px solid #000; padding: 5px; font-weight: bold; font-family: monospace;">${skrip.angkaGiliran}</td>
+            <td style="border: 1px solid #000; padding: 5px;">${!isNaN(a) ? a : '-'}</td>
+            <td style="border: 1px solid #000; padding: 5px;">${b !== null && !isNaN(b) ? b : ''}</td>
+            <td style="border: 1px solid #000; padding: 5px;">${c !== null && !isNaN(c) ? (c > 0 ? '+' + c : c) : ''}</td>
+            <td style="border: 1px solid #000; padding: 5px;">${d !== null && !isNaN(d) ? d : ''}</td>
+            <td style="border: 1px solid #000; padding: 5px;">${e !== null && !isNaN(e) ? (e > 0 ? '+' + e : e) : ''}</td>
+            <td style="border: 1px solid #000; padding: 5px;">${f !== '' ? (f > 0 ? '+' + f : f) : ''}</td>
+            <td style="border: 1px solid #000; padding: 5px; font-weight: bold;">${g !== '' ? g : ''}</td>
+          </tr>
+        `;
+      });
+
+      let lecAdjHtml = '';
+      const lecturers = dbPensyarah.filter(p => p.peranan !== 'Admin');
+      if (lecturers.length > 0) {
+        lecturers.forEach(lec => {
+          const avg = lecturerDiffCount[lec.email] > 0 ? (lecturerDiffSum[lec.email] / lecturerDiffCount[lec.email]) : 0;
+          lecAdjHtml += `
+            <tr style="border-bottom: 1px solid #000;">
+              <td style="border: 1px solid #000; padding: 4px 8px; text-align: left;">${lec.nama}</td>
+              <td style="border: 1px solid #000; padding: 4px 8px; text-align: center; font-weight: bold; font-family: monospace;">${avg !== 0 ? (avg > 0 ? '+' + avg.toFixed(1) : avg.toFixed(1)) : '0'}</td>
+            </tr>
+          `;
+        });
+      } else {
+        lecAdjHtml = `
+          <tr style="border-bottom: 1px solid #000;">
+            <td style="border: 1px solid #000; padding: 4px 8px; text-align: left;">HANIFF FAIZAL BIN CHEK ANI</td>
+            <td style="border: 1px solid #000; padding: 4px 8px; text-align: center; font-weight: bold; font-family: monospace;">-0.5</td>
+          </tr>
+        `;
+      }
+
+      const paper = document.createElement('div');
+      paper.className = 'print-summary-paper';
+      paper.innerHTML = `
+        <div style="font-family: Arial, sans-serif; color: #000; padding: 10px; max-width: 190mm; margin: 0 auto; font-size: 11px;">
+          
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 2px solid #000; padding-bottom: 8px;">
+            <div style="width: 75%;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 11px; font-weight: bold;">
+                <tr><td style="width: 120px; padding: 2px 0;">IPG Kampus</td><td>: ${dbKonfigurasi['IPG Kampus'] || 'DARULAMAN'}</td></tr>
+                <tr><td style="padding: 2px 0;">Nama Kursus</td><td>: ${dbKonfigurasi['Nama Kursus'] || 'KOKURIKULUM DAN KESIHATAN DIRI'}</td></tr>
+                <tr><td style="padding: 2px 0;">Kod Kursus</td><td>: ${dbKonfigurasi['Kod Kursus'] || 'GKKO1062'}</td></tr>
+                <tr><td style="padding: 2px 0;">Program</td><td>: ${dbKonfigurasi['Program'] || 'PPISMP'}</td></tr>
+                <tr><td style="padding: 2px 0;">Semester/Tahun</td><td>: ${dbKonfigurasi['Semester/Tahun'] || 'Semester III'}</td></tr>
+              </table>
+            </div>
+            <div style="text-align: right; font-size: 10px; font-weight: bold;">
+              <div style="font-size: 12px; font-weight: 800;">LAM-PT-04-02</div>
+              <div style="margin-top: 2px; color: #555;">Januari 2021</div>
+            </div>
+          </div>
+
+          <table style="width: 100%; border-collapse: collapse; font-size: 10px; text-align: center; border: 1px solid #000; margin-top: 8px;">
+            <thead>
+              <tr style="background-color: #f1f5f9; font-weight: bold;">
+                <th style="border: 1px solid #000; padding: 5px; width: 30px;">Bil.</th>
+                <th style="border: 1px solid #000; padding: 5px; width: 110px;">Angka Giliran</th>
+                <th style="border: 1px solid #000; padding: 5px;">(a)<br>Markah Pemeriksa</th>
+                <th style="border: 1px solid #000; padding: 5px;">(b)<br>Markah Moderasi Pusingan 1</th>
+                <th style="border: 1px solid #000; padding: 5px;">(c)<br>Perbezaan markah (b)-(a)</th>
+                <th style="border: 1px solid #000; padding: 5px;">(d)<br>Markah Moderasi Pusingan 2 (Jika perlu)*</th>
+                <th style="border: 1px solid #000; padding: 5px;">(e)<br>Perbezaan markah (d)-(a)</th>
+                <th style="border: 1px solid #000; padding: 5px;">(f)<br>Markah Penyelarasan antara (c) dengan (e)</th>
+                <th style="border: 1px solid #000; padding: 5px;">(g)<br>Markah akhir (a) atau (a+f) atau (a-f)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+
+          <div style="font-size: 9px; margin-top: 4px; margin-bottom: 16px; font-style: italic; color: #333;">
+            *Diperlukan jika beza markah antara (b) dan (a) ≥ 5
+          </div>
+
+          <div style="display: flex; justify-content: space-between; gap: 20px; margin-top: 15px; page-break-inside: avoid;">
+            <div style="flex: 1;">
+              <div style="font-weight: bold; font-size: 10px; margin-bottom: 4px; text-decoration: underline;">Markah Penyelarasan Pemeriksa</div>
+              <table style="width: 100%; border-collapse: collapse; font-size: 10px; border: 1px solid #000;">
+                <thead>
+                  <tr style="background-color: #f1f5f9; font-weight: bold;">
+                    <th style="border: 1px solid #000; padding: 4px 8px; text-align: left;">Pemeriksa</th>
+                    <th style="border: 1px solid #000; padding: 4px 8px; text-align: center; width: 110px;">Markah Penyelarasan (+/-)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${lecAdjHtml}
+                </tbody>
+              </table>
+            </div>
+
+            <div style="width: 220px; border: 1px solid #000; padding: 8px; font-size: 10px;">
+              <div style="font-weight: bold; text-align: center; border-bottom: 1px solid #000; padding-bottom: 4px; margin-bottom: 6px; text-transform: uppercase;">
+                Pengesahan Ketua Pemeriksa
+              </div>
+              <div style="height: 35px; border-bottom: 1px dashed #999; margin-bottom: 6px; display: flex; align-items: flex-end; justify-content: center; font-style: italic; color: #888;">
+                (Tandatangan & Cop)
+              </div>
+              <div style="margin-top: 4px;"><strong>Nama:</strong> HANIFF FAIZAL BIN CHEK ANI</div>
+              <div style="margin-top: 4px;"><strong>Tarikh:</strong> ${new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}</div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-top: 25px; font-size: 9px; color: #555; border-top: 1px solid #000; padding-top: 4px;">
+            <div>Januari 2021</div>
+            <div style="font-weight: bold;">LAM-PT-04-02</div>
+            <div>1/1</div>
+          </div>
+
+        </div>
+      `;
+
+      printContainer.appendChild(paper);
+      printContainer.style.display = 'block';
+
+      tunjukToast("Menjana dokumen LAM-PT-04-02...", "info");
+      setTimeout(() => {
+        window.print();
+        printContainer.style.display = 'none';
+        printContainer.innerHTML = '';
+      }, 500);
     }
 
     function binaSenaraiKerjaPensyarah() {
@@ -801,16 +1011,13 @@
       let countSelesai = 0, countSedang = 0, countBelum = 0;
 
       lecturers.forEach((lec, idx) => {
-        // Semak status muat naik P2
         const p2Script = dbSkripInduk.find(s => s.fasaModerasi.includes('P2') && s.emelPensyarah === lec.email);
         const p2Uploaded = !!p2Script;
 
-        // Semak status semakan P1
         const p1Script = dbSkripInduk.find(s => s.fasaModerasi.includes('P1'));
         const p1Review = p1Script ? dbHasilSemakan.find(h => h.angkaGiliran.toString() === p1Script.angkaGiliran.toString() && h.emelPensyarah === lec.email) : null;
         const p1Done = !!p1Review;
 
-        // Semak bilangan P2 yang telah disemak
         const p2Reviews = dbHasilSemakan.filter(h => h.emelPensyarah === lec.email && h.fasaModerasi.includes('P2'));
         const p2DoneCount = p2Reviews.length;
 
@@ -1001,7 +1208,6 @@
       lakaranOrangLain = {}; lakaranSesiIni = {}; ulasanSemuaHalaman = {}; pdfDoc = null; pageNum = 1; 
       const cat = document.getElementById('catatanMukaSurat'); if(cat) cat.value = '';
 
-      // SEMAKAN KOLABORATIF: Mengumpul semua stroke dari semua pemeriksa
       const rekodSkripIni = dbHasilSemakan.filter(h => h.angkaGiliran.toString() === skrip.angkaGiliran.toString());
       rekodSkripIni.forEach(r => {
         if(r.dataLakaran) {
