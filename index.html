@@ -104,8 +104,8 @@
           <div class="h-14 bg-white border-b border-slate-200 flex justify-between items-center px-4 shrink-0 shadow-sm z-10">
             <div class="flex gap-2">
               <button onclick="tukarWarnaPen('#EF4444', 'merah')" id="btnPenMerah" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-red-200 text-red-700 shadow-sm ring-1 ring-red-500"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Pen Pemeriksa</button>
-              <button onclick="tukarWarnaPen('#10B981', 'hijau')" id="btnPenHijau" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white border border-transparent"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Pen KP</button>
-              <button onclick="tukarWarnaPen('#8B5CF6', 'ungu')" id="btnPenUngu" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white border border-transparent"><span class="w-2.5 h-2.5 rounded-full bg-violet-500"></span> Pen P2/P3</button>
+              <button onclick="tukarWarnaPen('#10B981', 'hijau')" id="btnPenHijau" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white border border-transparent"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Pen KP (P1)</button>
+              <button onclick="tukarWarnaPen('#8B5CF6', 'ungu')" id="btnPenUngu" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white border border-transparent"><span class="w-2.5 h-2.5 rounded-full bg-violet-500"></span> Pen P2/P3 (Admin)</button>
             </div>
             <button onclick="clearCanvasSesiIni()" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:text-red-600 px-2 py-1 rounded transition-colors border border-slate-200 bg-white">Padam Lakaran Anda</button>
           </div>
@@ -156,7 +156,7 @@
               <h3 class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Senarai Tugas</h3>
               <div class="flex bg-slate-100 p-1 rounded-lg mb-3">
                 <button onclick="tukarFasaKerja('P1')" id="tabKerjaP1" class="flex-1 py-1.5 text-[10px] font-bold bg-white text-slate-900 rounded-md shadow-sm transition-all">P1 (1 Sampel)</button>
-                <button onclick="tukarFasaKerja('P2')" id="tabKerjaP2" class="flex-1 py-1.5 text-[10px] font-medium text-slate-500 rounded-md hover:text-slate-800 transition-all">P2 (Sample Pemeriksa)</button>
+                <button onclick="tukarFasaKerja('P2')" id="tabKerjaP2" class="flex-1 py-1.5 text-[10px] font-medium text-slate-500 rounded-md hover:text-slate-800 transition-all">P2 (Skrip Pemeriksa)</button>
               </div>
               <div id="senaraiTugasPelajar" class="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-1"></div>
             </div>
@@ -664,17 +664,7 @@
       if (!printContainer) return;
       printContainer.innerHTML = '';
 
-      let scripts = dbSkripInduk.length > 0 ? dbSkripInduk : [
-        { angkaGiliran: '2024182310152', markahPemeriksa: '86', fasaModerasi: 'P1' },
-        { angkaGiliran: '2024182310011', markahPemeriksa: '85', fasaModerasi: 'P1' },
-        { angkaGiliran: '2024182310142', markahPemeriksa: '85', fasaModerasi: 'P1' },
-        { angkaGiliran: '2024182310176', markahPemeriksa: '73', fasaModerasi: 'P1' },
-        { angkaGiliran: '2024182310191', markahPemeriksa: '73', fasaModerasi: 'P1' },
-        { angkaGiliran: '2024182310204', markahPemeriksa: '73', fasaModerasi: 'P1' },
-        { angkaGiliran: '2024182310068', markahPemeriksa: '9', fasaModerasi: 'P1' },
-        { angkaGiliran: '2024182310101', markahPemeriksa: '9', fasaModerasi: 'P1' },
-        { angkaGiliran: '2024182310053', markahPemeriksa: '9', fasaModerasi: 'P1' }
-      ];
+      let scripts = dbSkripInduk.length > 0 ? dbSkripInduk : [];
 
       if (fasaFilter && fasaFilter !== 'semua') {
         scripts = scripts.filter(s => s.fasaModerasi && s.fasaModerasi.toString().toUpperCase().includes(fasaFilter.toUpperCase()));
@@ -686,20 +676,36 @@
 
       scripts.forEach((skrip, idx) => {
         const reviews = dbHasilSemakan.filter(h => h.angkaGiliran.toString() === skrip.angkaGiliran.toString());
-        const p1Rev = reviews.find(r => r.fasaModerasi && r.fasaModerasi.toString().toUpperCase().includes('P1'));
-        const p2Rev = reviews.find(r => r.fasaModerasi && r.fasaModerasi.toString().toUpperCase().includes('P2'));
+        
+        const isP1Script = skrip.fasaModerasi.toString().toUpperCase().includes('P1');
+        const isP2Script = skrip.fasaModerasi.toString().toUpperCase().includes('P2');
+
+        const p1Rev = reviews.find(r => r.fasaModerasi && r.fasaModerasi.toString().toUpperCase().includes('P1')) || (isP1Script ? reviews[0] : null);
+        const p2Rev = reviews.find(r => r.fasaModerasi && r.fasaModerasi.toString().toUpperCase().includes('P2')) || (isP2Script ? reviews[0] : null);
 
         let a = parseFloat(skrip.markahPemeriksa);
-        let b = p1Rev ? parseFloat(p1Rev.markahModerasiP1 || p1Rev.markahAkhir) : null;
-        let c = (b !== null && !isNaN(a) && !isNaN(b)) ? (b - a) : null;
+        
+        // Pusingan 1 (b) & (c): HANYA untuk Skrip P1
+        let b = null, c = null;
+        if (isP1Script && p1Rev) {
+          let val = p1Rev.markahModerasiP1 || p1Rev.markahAkhir;
+          if (val !== undefined && val !== null && val !== '') {
+            b = parseFloat(val);
+            if (!isNaN(a) && !isNaN(b)) c = b - a;
+          }
+        }
 
-        let d = p2Rev ? parseFloat(p2Rev.markahModerasiP2 || p2Rev.markahAkhir) : null;
-        let e = (d !== null && !isNaN(a) && !isNaN(d)) ? (d - a) : null;
+        // Pusingan 2 (d) & (e): HANYA untuk Skrip P2 (Atas kebenaran Admin)
+        let d = null, e = null;
+        if (isP2Script && p2Rev) {
+          let val = p2Rev.markahModerasiP2 || p2Rev.markahAkhir;
+          if (val !== undefined && val !== null && val !== '') {
+            d = parseFloat(val);
+            if (!isNaN(a) && !isNaN(d)) e = d - a;
+          }
+        }
 
-        let f = (p1Rev && p1Rev.markahPenyelarasan !== undefined && p1Rev.markahPenyelarasan !== '') 
-                ? parseFloat(p1Rev.markahPenyelarasan) 
-                : (e !== null ? e : (c !== null ? c : ''));
-
+        let f = (c !== null) ? c : (e !== null ? e : '');
         let g = (d !== null) ? d : ((b !== null) ? b : (!isNaN(a) ? (f !== '' && !isNaN(f) ? a + f : a) : ''));
 
         if (p1Rev && c !== null && !isNaN(c)) {
@@ -767,7 +773,7 @@
             </div>
             <div style="text-align: right; font-size: 10px; font-weight: bold;">
               <div style="font-size: 12px; font-weight: 800;">LAM-PT-04-02</div>
-              <div style="margin-top: 2px; color: #555;">Jun-Julai</div>
+              <div style="margin-top: 2px; color: #555;">Januari 2021</div>
             </div>
           </div>
 
@@ -1387,13 +1393,37 @@
       if(!pelajarAktif) return;
       simpanUlasanHalamanSemasa();
       
+      const fasaUpper = (pelajarAktif.fasaModerasi || '').toUpperCase();
+      const isP1 = fasaUpper.includes('P1');
+      const isP2 = fasaUpper.includes('P2');
+
+      const markahA = parseFloat(document.getElementById('borangMarkahA')?.value) || 0;
+      const markahG = parseFloat(document.getElementById('borangMarkahG')?.value) || 0;
+
+      const modP1 = isP1 ? markahG : '';
+      const bezP1 = isP1 ? (markahG - markahA) : '';
+      const modP2 = isP2 ? markahG : '';
+      const bezP2 = isP2 ? (markahG - markahA) : '';
+
       const payload = {
-        angkaGiliran: pelajarAktif.angkaGiliran, emelPensyarah: dataSesi.email, fasaModerasi: pelajarAktif.fasaModerasi,
-        markahPemeriksa: document.getElementById('borangMarkahA')?.value || 0,
-        t3_a1: document.getElementById('rubric_a1')?.value || 0, t3_a2: document.getElementById('rubric_a2')?.value || 0,
-        t3_b1: document.getElementById('rubric_b1')?.value || 0, t3_b2: document.getElementById('rubric_b2')?.value || 0, t3_b3: document.getElementById('rubric_b3')?.value || 0,
-        t3_c1: document.getElementById('rubric_c1')?.value || 0, t3_c2: document.getElementById('rubric_c2')?.value || 0, t3_c3: document.getElementById('rubric_c3')?.value || 0,
-        markahAkhir: document.getElementById('borangMarkahG')?.value || 0,
+        angkaGiliran: pelajarAktif.angkaGiliran, 
+        emelPensyarah: dataSesi.email, 
+        fasaModerasi: pelajarAktif.fasaModerasi,
+        markahPemeriksa: markahA,
+        t3_a1: document.getElementById('rubric_a1')?.value || 0, 
+        t3_a2: document.getElementById('rubric_a2')?.value || 0,
+        t3_b1: document.getElementById('rubric_b1')?.value || 0, 
+        t3_b2: document.getElementById('rubric_b2')?.value || 0, 
+        t3_b3: document.getElementById('rubric_b3')?.value || 0,
+        t3_c1: document.getElementById('rubric_c1')?.value || 0, 
+        t3_c2: document.getElementById('rubric_c2')?.value || 0, 
+        t3_c3: document.getElementById('rubric_c3')?.value || 0,
+        markahModerasiP1: modP1,
+        perbezaanP1: bezP1,
+        markahModerasiP2: modP2,
+        perbezaanP2: bezP2,
+        markahPenyelarasan: isP1 ? bezP1 : bezP2,
+        markahAkhir: markahG,
         dataLakaran: JSON.stringify({ annotations: lakaranSesiIni, comments: ulasanSemuaHalaman })
       };
 
