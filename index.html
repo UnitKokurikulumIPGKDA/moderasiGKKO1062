@@ -579,10 +579,14 @@
       if(navContainer) {
         navContainer.innerHTML = '';
         const btnGaya = "nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-xs text-slate-600 font-medium hover:bg-slate-50 cursor-pointer w-full text-left";
-        if (dataSesi.peranan === "Admin") navContainer.innerHTML += `<button onclick="tukarPandangan('adminDashboard')" class="${btnGaya} active" id="nav_adminDashboard">Dashboard Admin</button>`;
+        
+        if (dataSesi.peranan === "Admin") {
+          navContainer.innerHTML += `<button onclick="tukarPandangan('adminDashboard')" class="${btnGaya} active" id="nav_adminDashboard">Dashboard Admin</button>`;
+          navContainer.innerHTML += `<button onclick="tukarPandangan('lecSummary')" class="${btnGaya}" id="nav_lecSummary">Ringkasan Moderasi</button>`;
+        }
+        
         navContainer.innerHTML += `
           <button onclick="tukarPandangan('workspace')" class="${btnGaya} ${dataSesi.peranan !== 'Admin' ? 'active' : ''}" id="nav_workspace">Kanvas Semakan</button>
-          <button onclick="tukarPandangan('lecSummary')" class="${btnGaya}" id="nav_lecSummary">Ringkasan Moderasi</button>
           <button onclick="tukarPandangan('lecUpload')" class="${btnGaya}" id="nav_lecUpload">Muat Naik Skrip (P2)</button>
         `;
       }
@@ -590,6 +594,10 @@
     }
 
     function tukarPandangan(idPanel) {
+      if (idPanel === 'lecSummary' && dataSesi.peranan !== 'Admin') {
+        idPanel = 'workspace';
+      }
+
       const panelIds = {
         'adminDashboard': 'panelAdminDashboard',
         'workspace': 'panelWorkspace',
