@@ -1,0 +1,2336 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Moderasi Digital IPG — GKKO1062</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+
+  <style>
+    :root {
+      --bg-paper: #FDFBF7;
+      --ink-dark: #1E2229;
+      --ink-muted: #6A6E75;
+      --border-color: #E6E2DA;
+    }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-paper); color: var(--ink-dark); }
+    .font-display { font-family: 'Bricolage Grotesque', sans-serif; }
+    .border-editorial { border: 1px solid var(--border-color); }
+    .divider-editorial { border-bottom: 2px dashed var(--border-color); }
+    .fasa-tab.active { background-color: var(--ink-dark); color: var(--bg-paper); font-weight: 600; }
+    #scriptCanvas { cursor: crosshair; }
+
+    #bulkPrintContainer { display: none; }
+
+    @media print {
+      @page { size: A4 portrait; margin: 10mm; }
+      body > *:not(#bulkPrintContainer) { display: none !important; }
+      body { margin: 0; padding: 0; }
+      #bulkPrintContainer { display: block !important; }
+      .print-page-block {
+        page-break-inside: avoid; break-inside: avoid;
+        page-break-after: always; break-after: page;
+        display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+        width: 100%; max-height: 277mm; overflow: hidden; margin: 0; padding: 0;
+      }
+      .print-page-block:last-of-type { page-break-after: avoid; break-after: auto; }
+      .print-canvas-element {
+        max-width: 190mm !important; max-height: 215mm !important;
+        width: auto !important; height: auto !important; display: block; box-shadow: none; flex-shrink: 0;
+      }
+      .print-page-comment-box {
+        display: block !important; width: 100%; max-width: 190mm; max-height: 45mm; overflow: hidden;
+        border-top: 2px dashed #999; padding: 6px 10px; font-size: 10px;
+        font-family: 'Plus Jakarta Sans', sans-serif; color: #333; background: #fffef8;
+        box-sizing: border-box; flex-shrink: 0; margin-top: 4px;
+      }
+      .print-page-comment-box .comment-label { font-weight: 700; text-transform: uppercase; font-size: 9px; letter-spacing: 1px; color: #D9383A; }
+      .print-page-comment-box .comment-text { margin-top: 2px; font-size: 11px; color: #1E2229; white-space: pre-wrap; word-break: break-word; }
+      .print-report-footer { page-break-before: always; break-before: page; display: block !important; padding: 20px; font-family: 'Plus Jakarta Sans', sans-serif; }
+      .print-report-footer table { width: 100%; border-collapse: collapse; font-size: 9px; }
+      .print-report-footer table th, .print-report-footer table td { border: 1px solid #ccc !important; padding: 4px 6px !important; }
+      .print-report-footer table thead tr { background: #1E2229 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+    #printFooterSummary { display: none; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col p-4 md:p-8">
+
+  <!-- ======================== LOGIN OVERLAY ======================== -->
+  <div id="loginOverlay" class="fixed inset-0 bg-neutral-900/90 backdrop-blur-md z-50 flex justify-center items-center p-4">
+    <div class="bg-white max-w-md w-full p-8 rounded-2xl border border-neutral-200 shadow-2xl flex flex-col gap-5">
+      <div class="text-center">
+        <span class="text-xs font-bold tracking-widest uppercase text-red-600">Sistem Pengesahan Kualiti IPG</span>
+        <h2 class="text-2xl font-display font-extrabold mt-1 text-[#1E2229]">Daftar Masuk Moderasi</h2>
+        <p class="text-xs text-gray-500 mt-1">Sila masukkan emel rasmi dan kata laluan anda.</p>
+      </div>
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="text-xs font-bold text-gray-600 block mb-1">Emel Rasmi:</label>
+          <input type="email" id="lecturerEmailInput" placeholder="contoh@ipgm.edu.my" autocomplete="username"
+            class="w-full px-3 py-2.5 border rounded-xl text-xs bg-[#FDFBF7] font-medium focus:outline-none focus:border-red-400">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-gray-600 block mb-1">Kata Laluan (Password):</label>
+          <input type="password" id="lecturerPasswordInput" placeholder="Masukkan kata laluan" autocomplete="current-password"
+            class="w-full px-3 py-2.5 border rounded-xl text-xs bg-[#FDFBF7] focus:outline-none focus:border-red-400 font-mono">
+        </div>
+        <p id="loginErrorMsg" class="hidden text-[11px] font-bold text-red-600 text-center bg-red-50 p-2 rounded-lg"></p>
+      </div>
+      <button onclick="sahkanLoginPensyarah()" id="btnLoginSubmit"
+        class="w-full bg-[#1E2229] hover:bg-black text-white font-bold py-3 px-4 rounded-xl text-sm transition-all shadow-md">
+        Sahkan & Masuk Dashboard
+      </button>
+    </div>
+  </div>
+
+  <!-- ======================== HEADER ======================== -->
+  <header class="w-full max-w-7xl mx-auto mb-8 bg-white p-6 rounded-xl border-editorial shadow-sm no-print">
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-6 divider-editorial">
+      <div>
+        <span class="text-xs font-bold tracking-widest uppercase text-red-600">Sistem Digital IPG</span>
+        <h1 class="text-3xl md:text-4xl font-display font-extrabold tracking-tight mt-1">Moderasi Pentaksiran Berterusan</h1>
+        <p class="text-sm text-gray-500 mt-1">Akaun Semakan Semasa:
+          <span id="activeLecturerBadge" class="font-bold text-red-600 underline">Belum Log Masuk</span></p>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="bukaModalTukarPass()"
+          class="border border-amber-300 hover:bg-amber-50 hover:text-amber-700 text-amber-600 px-4 py-2 text-xs font-bold rounded-lg transition-all">
+          🔑 Tukar Kata Laluan
+        </button>
+        <button onclick="logoutPensyarah()"
+          class="border border-neutral-300 hover:bg-red-50 hover:text-red-600 px-4 py-2 text-xs font-bold rounded-lg transition-all">
+          Log Keluar Akaun
+        </button>
+      </div>
+    </div>
+    <div id="courseInfo" class="grid grid-cols-2 md:grid-cols-5 gap-4 pt-4 text-xs font-medium uppercase tracking-wider text-gray-500">
+      <div>IPG Kampus: <span id="infoIpg" class="block text-sm font-bold text-[#1E2229] normal-case mt-1">-</span></div>
+      <div>Nama Kursus: <span id="infoKursus" class="block text-sm font-bold text-[#1E2229] normal-case mt-1">-</span></div>
+      <div>Kod Kursus: <span id="infoKod" class="block text-sm font-bold text-[#1E2229] mt-1">-</span></div>
+      <div>Program: <span id="infoProgram" class="block text-sm font-bold text-[#1E2229] mt-1">-</span></div>
+      <div>Semester/Tahun: <span id="infoSemester" class="block text-sm font-bold text-[#1E2229] mt-1">-</span></div>
+    </div>
+  </header>
+
+  <!-- ======================== ADMIN PANEL ======================== -->
+  <section id="adminDashboardPanel" class="hidden w-full max-w-7xl mx-auto mb-8 bg-amber-50/60 p-5 rounded-xl border border-amber-200 shadow-sm no-print">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="p-1 rounded bg-amber-200 text-amber-900 font-bold text-[10px] uppercase tracking-wider">Akses Pentadbir</span>
+      <h3 class="font-display font-bold text-lg text-amber-900">Admin Dashboard</h3>
+    </div>
+
+    <div class="flex gap-1 bg-amber-100/70 p-1 rounded-xl mb-4 border border-amber-200">
+      <button onclick="tukarTabAdmin('upload')" id="tabAdminUpload"
+        class="admin-tab flex-1 py-2 text-xs font-bold rounded-lg bg-amber-700 text-white shadow-sm transition-all">
+        📁 Muat Naik Skrip
+      </button>
+      <button onclick="tukarTabAdmin('rumusan')" id="tabAdminRumusan"
+        class="admin-tab flex-1 py-2 text-xs font-semibold rounded-lg text-amber-800 hover:bg-amber-200/50 transition-all">
+        📊 Rumusan Semakan
+      </button>
+      <button onclick="tukarTabAdmin('semak')" id="tabAdminSemak"
+        class="admin-tab flex-1 py-2 text-xs font-semibold rounded-lg text-amber-800 hover:bg-amber-200/50 transition-all">
+        🔍 Semak Contengan
+      </button>
+      <button onclick="tukarTabAdmin('auto')" id="tabAdminAuto"
+        class="admin-tab flex-1 py-2 text-xs font-semibold rounded-lg text-amber-800 hover:bg-amber-200/50 transition-all">
+        ⚙️ Semakan Automatik (AI & Format)
+      </button>
+    </div>
+
+    <!-- TAB 1: Upload Skrip -->
+    <div id="adminTabUpload">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-white p-4 rounded-xl border-amber-200 text-xs">
+        <div>
+          <label class="font-bold text-gray-600 block mb-1">1. Taip Angka Giliran Pelajar:</label>
+          <input type="text" id="adminStudentNumberInput" placeholder="Sila taip manual..."
+            class="w-full p-2 border rounded-lg bg-neutral-50 font-mono focus:outline-none focus:border-amber-500 text-sm">
+        </div>
+        <div>
+          <label class="font-bold text-gray-600 block mb-1">2. Tetapkan Fasa / Aras:</label>
+          <select id="adminFasaSelect" class="w-full p-2 border rounded-lg bg-neutral-50 font-medium focus:outline-none text-sm">
+            <option value="P1: Sampel Rawak">Fasa 1: P1 (Sampel Rawak)</option>
+            <option value="P2: Amat Cemerlang">Fasa 2: P2 (Amat Cemerlang)</option>
+            <option value="P2: Sederhana">Fasa 2: P2 (Sederhana)</option>
+            <option value="P2: Lemah">Fasa 2: P2 (Lemah)</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-bold text-gray-600 block mb-1">3. Markah Pemeriksa Asal (a):</label>
+          <input type="number" id="adminMarkahAInput" placeholder="Contoh: 40" min="0" max="50"
+            class="w-full p-2 border rounded-lg bg-neutral-50 focus:outline-none focus:border-amber-500 text-sm">
+        </div>
+        <div>
+          <label class="font-bold text-gray-600 block mb-1">4. Pilih Fail PDF Tugasan:</label>
+          <input type="file" id="adminFileUploader" accept="application/pdf"
+            class="w-full p-1 border rounded-lg bg-neutral-50 text-[11px]">
+        </div>
+      </div>
+      <div class="mt-3 flex justify-end">
+        <button onclick="lakukanUploadAdminKeDrive()" id="btnAdminUpload"
+          class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-6 rounded-lg transition-all text-xs shadow-sm">
+          Daftar Pelajar & Simpan Fail Ke Cloud
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 2: Rumusan Semakan -->
+    <div id="adminTabRumusan" class="hidden">
+      <div class="bg-white rounded-xl border border-amber-200 p-4">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4">
+          <h4 class="text-sm font-display font-bold text-amber-900">Laporan Moderasi GKKO1062 — Tugasan 3</h4>
+          <div class="flex items-center gap-2 flex-wrap">
+            <select id="rumusanModeSelect" onchange="tukarModeRumusan(this.value)"
+              class="text-[11px] font-bold border border-amber-300 rounded-lg px-2.5 py-1.5 bg-white text-amber-800 focus:outline-none">
+              <option value="keseluruhan">📊 Ringkasan Keseluruhan Pensyarah</option>
+              <option value="p1">🎯 Semak Sample (Fasa 1 - P1)</option>
+              <option value="p2">📚 Semak 9 Skrip (Fasa 2 - P2)</option>
+            </select>
+            <button onclick="cetakLaporanRumusan()"
+              class="text-[10px] font-bold bg-[#1E2229] hover:bg-black text-white px-3 py-1.5 rounded-lg transition-all whitespace-nowrap">
+              🖨️ Cetak Laporan
+            </button>
+            <button onclick="paparRumusanSemakan()" class="text-[10px] font-bold bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1.5 rounded-lg transition-all border border-amber-200 whitespace-nowrap">
+              🔄 Muat Semula
+            </button>
+          </div>
+        </div>
+        <div id="rumusanRingkasan" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-xs"></div>
+        <div class="overflow-x-auto rounded-lg border border-neutral-200">
+          <table id="rumusanTable" class="w-full text-xs border-collapse">
+            <thead id="rumusanTableHead"></thead>
+            <tbody id="rumusanJadualBody" class="divide-y divide-neutral-100"></tbody>
+          </table>
+        </div>
+        <p id="rumusanCatatanKaki" class="text-[10px] text-gray-400 mt-2">* Jumlah skrip dikira berdasarkan senarai dalam helaian Skrip_Pelajar.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3: Semak Contengan Pensyarah -->
+    <div id="adminTabSemak" class="hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white rounded-xl border border-amber-200 p-4">
+          <h4 class="text-xs font-bold text-amber-900 uppercase tracking-wider mb-3">1. Pilih Pensyarah</h4>
+          <div id="senaraipilihPensyarahAdmin" class="flex flex-col gap-1.5 max-h-52 overflow-y-auto pr-1"></div>
+        </div>
+        <div class="bg-white rounded-xl border border-amber-200 p-4">
+          <h4 class="text-xs font-bold text-amber-900 uppercase tracking-wider mb-1">2. Pilih Skrip Pelajar</h4>
+          <p id="adminSemakPensyarahLabel" class="text-[10px] text-amber-700 mb-2 font-medium">Sila pilih pensyarah dahulu.</p>
+          <div id="senaraiSkripAdminSemak" class="flex flex-col gap-1.5 max-h-52 overflow-y-auto pr-1">
+            <p class="text-[10px] text-gray-400 text-center p-4">Tiada pensyarah dipilih.</p>
+          </div>
+        </div>
+      </div>
+      <div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 text-[10px] text-amber-800 leading-relaxed">
+        <span class="font-bold">📌 Arahan:</span>
+        Pilih pensyarah → pilih skrip pelajar → PDF dan contengan pensyarah akan dibuka di panel kiri →
+        Anda boleh menambah anotasi menggunakan pen → Klik
+        <span class="font-bold">"💾 Simpan Anotasi Admin & Penyelarasan"</span> pada banner oren yang muncul.
+      </div>
+    </div>
+
+    <!-- TAB 4: Semakan Automatik -->
+    <div id="adminTabAuto" class="hidden">
+      <div class="bg-white rounded-xl border border-amber-200 p-4">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4">
+          <div class="flex items-center gap-1.5 bg-neutral-100 p-1 rounded-lg border border-neutral-200 w-max">
+            <button onclick="tukarModeSemakAuto('rule')" id="btnModeRule"
+              class="px-3 py-1.5 text-xs font-bold rounded-md bg-white border border-amber-300 text-amber-700 shadow-sm transition-all">
+              🧮 Rule-Based (Lokal & Pantas)
+            </button>
+            <button onclick="tukarModeSemakAuto('ai')" id="btnModeAI"
+              class="px-3 py-1.5 text-xs font-semibold rounded-md text-gray-500 hover:bg-white/60 transition-all">
+              🤖 AI (Groq GPT-OSS)
+            </button>
+          </div>
+          <p id="modeAutoDesc" class="text-[10px] text-gray-400 max-w-sm text-right">Kaedah kata kunci/corak teks — pantas &amp; percuma, tetapi lebih kasar.</p>
+        </div>
+
+        <div id="autoAiNotis" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 text-[10px] text-blue-800 mb-4 leading-relaxed">
+          <span class="font-bold">ℹ️ Mod AI:</span> Teks skrip akan dihantar ke model AI melalui backend Apps Script. Semakan AI akan sentiasa berpandukan Rubrik Rasmi (jika telah dimuat naik) dan menguji kepatuhan Tugasan 3.
+        </div>
+
+        <div class="bg-white border-2 border-dashed border-amber-300 rounded-xl p-4 mb-4">
+          <p class="text-xs font-bold text-amber-900 uppercase tracking-wider mb-1">📎 Rubrik Rasmi (Panduan Wajib Semakan AI)</p>
+          <p class="text-[10px] text-gray-500 mb-3">Muat naik fail rubrik rasmi (PDF atau TXT). Semakan AI akan menguji huraian kriteria dan pemecahan markah mengikut rubrik yang anda muat naik.</p>
+
+          <div id="rubrikAktifInfo" class="hidden bg-green-50 border border-green-200 rounded-lg p-2.5 mb-3 text-[10px] text-green-800">
+            <span class="font-bold">✅ Rubrik Rasmi Aktif:</span> <span id="rubrikAktifNama">-</span>
+            <span class="text-green-600"> — dimuat naik <span id="rubrikAktifTarikh">-</span></span>
+          </div>
+          <div id="rubrikTiadaInfo" class="bg-red-50 border border-red-200 rounded-lg p-2.5 mb-3 text-[10px] text-red-700">
+            ⚠️ Belum ada Rubrik Rasmi dimuat naik. Semakan AI menggunakan kriteria standard Tugasan 3 yang dibekalkan.
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+            <input type="file" id="rubrikFileInput" accept=".pdf,.txt"
+              class="text-[11px] flex-grow border border-neutral-300 rounded-lg p-2 bg-neutral-50">
+            <button onclick="muatNaikRubrik()" id="btnMuatNaikRubrik"
+              class="bg-[#1E2229] hover:bg-black text-white font-bold py-2 px-4 rounded-lg text-xs transition-all shadow-sm whitespace-nowrap">
+              ⬆️ Muat Naik Rubrik
+            </button>
+          </div>
+          <p id="rubrikUploadStatus" class="text-[10px] text-gray-400 mt-2"></p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="text-xs font-bold text-amber-900 uppercase tracking-wider mb-2 block">1. Pilih Skrip Pelajar</label>
+            <div id="senaraiSkripAutoSemak" class="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1 border border-amber-100 rounded-lg p-2 bg-neutral-50"></div>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-amber-900 uppercase tracking-wider mb-2 block">2. Jalankan Semakan</label>
+            <p id="autoSemakSkripLabel" class="text-[11px] text-gray-500">Sila pilih skrip pelajar dahulu.</p>
+            <button onclick="jalankanSemakanAutomatik()" id="btnJalankanAuto" disabled
+              class="bg-amber-600 hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded-lg text-xs transition-all shadow-sm">
+              ▶️ Jalankan Semakan Automatik
+            </button>
+            <p id="autoSemakStatus" class="text-[10px] text-gray-400"></p>
+          </div>
+        </div>
+
+        <div id="autoHasilContainer" class="hidden flex flex-col gap-4">
+          <div class="bg-amber-50 border border-amber-300 rounded-xl p-4 flex justify-between items-center">
+            <div>
+              <p class="text-xs font-bold text-amber-900 uppercase tracking-wider">Cadangan Jumlah Markah (Awal)</p>
+              <p class="text-[10px] text-amber-700 mt-0.5">Sila sahkan dan edit secara manual di panel utama sebelum menghantar.</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span id="autoJumlahCadangan" class="text-2xl font-bold font-mono text-amber-800">0 / 50</span>
+              <button onclick="gunakanCadanganMarkah()"
+                class="text-[10px] font-bold bg-[#1E2229] text-white px-3 py-2 rounded-lg hover:bg-black transition-all whitespace-nowrap">
+                ⤵️ Guna Cadangan Ke Rubrik
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white border border-neutral-200 rounded-xl p-4">
+            <p class="text-xs font-bold text-[#1E2229] uppercase tracking-wider mb-1">🔒 Tetapkan Markah Pemeriksa Asal (a) — Admin Sahaja</p>
+            <p class="text-[10px] text-gray-400 mb-3">Guna hasil semakan automatik di atas sebagai panduan untuk menetapkan/mengemaskini markah asal skrip ini dalam pangkalan data.</p>
+            <div class="flex items-center gap-3 flex-wrap">
+              <input type="number" id="autoMarkahAsalInput" min="0" max="50" step="0.5" placeholder="Contoh: 40"
+                class="w-32 text-center font-bold border border-neutral-300 rounded-lg py-2 text-sm">
+              <button onclick="simpanMarkahAsalDariAuto()"
+                class="text-xs font-bold bg-[#1E2229] text-white px-4 py-2 rounded-lg hover:bg-black transition-all">
+                💾 Simpan Markah Asal (a)
+              </button>
+              <span id="autoMarkahAsalStatus" class="text-[10px] text-gray-400"></span>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-xs font-bold text-[#1E2229] uppercase tracking-wider mb-2">📋 Semakan Kepatuhan Rubrik (Tugasan 3)</h4>
+            <div id="autoRubrikList" class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs"></div>
+          </div>
+
+          <div>
+            <h4 class="text-xs font-bold text-[#1E2229] uppercase tracking-wider mb-2">📚 Semakan Sumber & Rujukan</h4>
+            <div id="autoApaList" class="flex flex-col gap-2 text-xs"></div>
+          </div>
+
+          <div id="autoKesalahanWrapper" class="hidden">
+            <h4 class="text-xs font-bold text-[#1E2229] uppercase tracking-wider mb-2">🔍 Senarai Kesalahan Dikesan (Semua Aspek)</h4>
+            <div id="autoKesalahanList" class="flex flex-col gap-2 text-xs"></div>
+          </div>
+
+          <div>
+            <h4 class="text-xs font-bold text-[#1E2229] uppercase tracking-wider mb-2">✏️ Draf Ulasan Automatik</h4>
+            <textarea id="autoUlasanTeks" rows="6" readonly
+              class="w-full text-xs font-medium border border-neutral-200 rounded-lg p-3 bg-neutral-50 resize-y leading-relaxed text-[#1E2229]"></textarea>
+            <button onclick="salinUlasanAuto(this)" class="mt-2 text-[10px] font-bold bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 px-3 py-1.5 rounded-lg transition-all">
+              📋 Salin Ulasan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== MAIN CONTENT ======================== -->
+  <main class="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow items-start">
+
+    <!-- LEFT: PDF Viewer + Controls -->
+    <section class="lg:col-span-7 xl:col-span-8 flex flex-col gap-4">
+
+      <div class="flex flex-col sm:flex-row justify-between sm:items-center bg-white p-4 rounded-xl border-editorial shadow-sm gap-4 no-print">
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pilihan Warna Dakwat Pen Rasmi:</label>
+          <div class="flex items-center gap-1.5 bg-neutral-100 p-1 rounded-lg border border-neutral-200">
+            <button onclick="tukarWarnaPenSemasa('#D9383A', 'merah')" id="btnPenMerah"
+              class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-md bg-white border border-red-200 text-red-600 shadow-sm transition-all">
+              <span class="w-2.5 h-3 rounded-full bg-[#D9383A]"></span> Pemeriksa (Merah)
+            </button>
+            <button onclick="tukarWarnaPenSemasa('#10B981', 'hijau')" id="btnPenHijau"
+              class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-md text-gray-500 hover:bg-white/60 transition-all">
+              <span class="w-2.5 h-3 rounded-full bg-[#10B981]"></span> KP (Hijau)
+            </button>
+            <button onclick="tukarWarnaPenSemasa('#8B5CF6', 'ungu')" id="btnPenUngu"
+              class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-md text-gray-500 hover:bg-white/60 transition-all">
+              <span class="w-2.5 h-3 rounded-full bg-[#8B5CF6]"></span> P3 / P2 (Ungu)
+            </button>
+          </div>
+        </div>
+        <button onclick="clearCanvasPageOnly()"
+          class="px-3 py-1.5 text-xs font-semibold border-editorial rounded-md bg-[#FDFBF7] hover:bg-neutral-100 self-end">
+          Padam Lakaran Halaman Ini
+        </button>
+      </div>
+
+      <div id="pdfNavigationControls" class="hidden flex justify-between items-center bg-white px-5 py-3 rounded-xl border-editorial shadow-sm text-xs font-medium no-print">
+        <button onclick="tukarHalamanPdf(-1)" class="px-3 py-2 border rounded-lg bg-neutral-50 hover:bg-neutral-100 font-bold transition-all">← Halaman Sebelum</button>
+        <span class="text-gray-600 bg-neutral-100 px-4 py-1.5 rounded-full font-semibold">
+          Muka Surat
+          <span id="pdfCurrentPageNum" class="font-bold text-red-600 font-mono text-sm mx-1">-</span>
+          daripada
+          <span id="pdfTotalPagesNum" class="font-bold text-black font-mono text-sm mx-1">-</span>
+        </span>
+        <button onclick="tukarHalamanPdf(1)" class="px-3 py-2 border rounded-lg bg-neutral-50 hover:bg-neutral-100 font-bold transition-all">Halaman Seterusnya →</button>
+      </div>
+
+      <div id="canvasContainer" class="w-full rounded-xl border-editorial shadow-inner overflow-auto flex flex-col justify-center items-center min-h-[640px] p-4 bg-[#EBE7DF]">
+        <canvas id="scriptCanvas" class="shadow-xl bg-white hidden"></canvas>
+        <div id="canvasPlaceholder" class="text-center text-gray-400 max-w-md p-6 no-print">
+          <svg class="mx-auto h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <p class="font-medium text-sm text-[#1E2229]">Sila Pilih Skrip Pelajar</p>
+          <p class="text-xs mt-1 text-gray-500">Klik nombor angka giliran pelajar pada papan kerja kanan untuk menyemak fail PDF.</p>
+        </div>
+      </div>
+
+      <div id="adminSemakBanner" class="hidden bg-orange-50 border border-orange-300 rounded-xl p-4 no-print">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <span class="text-[10px] font-bold text-orange-800 bg-orange-200 px-2 py-0.5 rounded-full uppercase tracking-wider">🔍 Mod Semak Admin Aktif</span>
+            <p class="text-xs font-bold text-orange-900 mt-1.5">Sedang menyemak contengan:
+              <span id="bannerEmelPensyarah" class="font-mono bg-orange-100 px-1.5 py-0.5 rounded text-orange-800">-</span>
+            </p>
+            <p class="text-[10px] text-orange-700 mt-0.5">Skrip Pelajar:
+              <span id="bannerAngkaGiliran" class="font-mono font-bold">-</span>
+              — Lukisan anda akan disimpan sebagai <span class="font-bold text-orange-800">Anotasi Admin</span>.
+            </p>
+          </div>
+          <div class="flex gap-2 flex-shrink-0">
+            <button onclick="simpanAnotasiAdminKeSheets()" id="btnSimpanOverlayAdmin"
+              class="text-xs font-bold bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-all shadow-sm whitespace-nowrap">
+              💾 Simpan Anotasi Admin & Penyelarasan
+            </button>
+            <button onclick="keluarModSemakAdmin()"
+              class="text-xs font-bold border border-orange-300 hover:bg-orange-100 text-orange-700 px-3 py-2 rounded-lg transition-all whitespace-nowrap">
+              ✕ Keluar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="catatanContainer" class="hidden bg-white rounded-xl border-editorial shadow-sm p-4 no-print">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <label class="text-xs font-bold text-[#1E2229] uppercase tracking-wider">
+              ✏️ Catatan Komen Semakan —
+              <span class="text-red-600">Muka Surat <span id="catatanHalamanLabel">-</span></span>
+            </label>
+            <p class="text-[10px] text-gray-400 mt-0.5">Catatan ini akan disimpan dan dicetak bersama halaman tersebut.</p>
+          </div>
+          <button onclick="simpanCatatanHalaman(this)"
+            class="text-[10px] font-bold bg-[#1E2229] text-white px-3 py-1.5 rounded-lg hover:bg-black transition-all">
+            Simpan Catatan
+          </button>
+        </div>
+        <textarea id="catatanInput" rows="3" placeholder="Contoh: Isu kesihatan dihuraikan dengan jelas, penyelesaian masalah agak umum..."
+          class="w-full text-xs font-medium border border-neutral-200 rounded-lg p-3 bg-[#FDFBF7] focus:outline-none focus:border-red-300 resize-y leading-relaxed text-[#1E2229]"></textarea>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="text-[10px] text-gray-400">Template pantas:</span>
+          <button onclick="insertTemplate('Bahagian ini perlu diperbaiki. ')" class="text-[10px] px-2 py-1 border rounded bg-neutral-50 hover:bg-red-50 hover:text-red-700 transition-all">⚠️ Perlu Baiki</button>
+          <button onclick="insertTemplate('Huraian isu dan penyelesaian masalah sangat baik. ')" class="text-[10px] px-2 py-1 border rounded bg-neutral-50 hover:bg-green-50 hover:text-green-700 transition-all">✅ Isu & Penyelesaian Baik</button>
+          <button onclick="insertTemplate('Sila semak ketepatan sumber rujukan yang digunakan. ')" class="text-[10px] px-2 py-1 border rounded bg-neutral-50 hover:bg-amber-50 hover:text-amber-700 transition-all">📚 Semak Sumber</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Senarai Pelajar & Panel Rubrik -->
+    <section class="lg:col-span-5 xl:col-span-4 flex flex-col gap-6 no-print">
+
+      <div class="bg-white p-4 rounded-xl border-editorial shadow-sm">
+        <h3 class="text-xs font-bold tracking-wider uppercase text-gray-400 mb-3">Papan Alur Kerja Moderasi</h3>
+        <div class="grid grid-cols-2 gap-1 bg-[#FDFBF7] p-1 rounded-lg border-editorial mb-3">
+          <button onclick="tukarFasa('Fasa1')" id="tabFasa1" class="fasa-tab py-2 text-xs font-medium rounded-md active">Fasa 1: P1 (1 Sampel)</button>
+          <button onclick="tukarFasa('Fasa2')" id="tabFasa2" class="fasa-tab py-2 text-xs font-medium rounded-md text-gray-600 hover:bg-neutral-100">Fasa 2: P2 (9 Sampel)</button>
+        </div>
+        <div id="subPenapisFasa2" class="hidden grid grid-cols-4 gap-1 p-1 bg-neutral-50 rounded-md border-editorial mb-3 text-[10px]">
+          <button onclick="setSubAras('Semua')" id="subAll" class="py-1 font-bold rounded bg-white border shadow-sm">Semua</button>
+          <button onclick="setSubAras('Amat Cemerlang')" id="subCem" class="py-1 rounded text-green-700">Cemerlang</button>
+          <button onclick="setSubAras('Sederhana')" id="subSed" class="py-1 rounded text-amber-700">Sederhana</button>
+          <button onclick="setSubAras('Lemah')" id="subLem" class="py-1 rounded text-red-700">Lemah</button>
+        </div>
+        <div id="studentList" class="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1"></div>
+      </div>
+
+      <!-- Rubrik Pemarkahan Tugasan 3 (50 Markah) -->
+      <div id="rubricPanel" class="bg-white p-5 rounded-xl border-editorial shadow-sm flex flex-col gap-4">
+        <div class="divider-editorial pb-2 flex justify-between items-center">
+          <h3 class="font-display font-bold text-sm text-red-700 uppercase tracking-wider">Rubrik Pemarkahan (Max 50M)</h3>
+          <span class="text-[10px] bg-red-50 text-red-700 font-bold px-2 py-0.5 rounded-full border border-red-200">Tugasan 3 — GKKO1062</span>
+        </div>
+
+        <!-- PENGENALAN (10%) -->
+        <div class="space-y-2.5">
+          <h4 class="text-xs font-extrabold text-[#1E2229] uppercase tracking-wide border-l-2 border-red-600 pl-2">Pengenalan (10%)</h4>
+          <div class="bg-neutral-50/60 p-3 rounded-lg border border-neutral-200 space-y-3">
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between items-start gap-3">
+                <span class="text-xs font-bold text-gray-700">1. Persembahan Idea & Penilaian Isu (C5/HP2)</span>
+                <input type="number" id="rubricT3_A1" min="0" max="5" step="0.1" oninput="kiraSkorRubrik()" class="w-16 text-center text-xs font-bold border rounded p-1 bg-white" placeholder="/5">
+              </div>
+              <p class="text-[10px] text-gray-500 leading-normal">Huraian fakta, kejelasan & keyakinan idea, kerelevanan contoh dan data sokongan.</p>
+            </div>
+            <div class="flex flex-col gap-1 border-t pt-2 border-neutral-200">
+              <div class="flex justify-between items-start gap-3">
+                <span class="text-xs font-bold text-gray-700">2. Penaakulan Kritis & Analitikal (KKG3)</span>
+                <input type="number" id="rubricT3_A2" min="0" max="5" step="0.1" oninput="kiraSkorRubrik()" class="w-16 text-center text-xs font-bold border rounded p-1 bg-white" placeholder="/5">
+              </div>
+              <p class="text-[10px] text-gray-500 leading-normal">Kebolehan mengumpul, menyisih & memproses maklumat dari pelbagai sumber digital melalui visual/grafik/numerik.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- KANDUNGAN (25%) -->
+        <div class="space-y-2.5">
+          <h4 class="text-xs font-extrabold text-[#1E2229] uppercase tracking-wide border-l-2 border-[#10B981] pl-2">Kandungan (25%)</h4>
+          <div class="bg-neutral-50/60 p-3 rounded-lg border border-neutral-200 space-y-3">
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between items-start gap-3">
+                <span class="text-xs font-bold text-gray-700">3. Kebolehan Membuat Huraian Isu (KKG3)</span>
+                <input type="number" id="rubricT3_B1" min="0" max="5" step="0.1" oninput="kiraSkorRubrik()" class="w-16 text-center text-xs font-bold border rounded p-1 bg-white" placeholder="/5">
+              </div>
+              <p class="text-[10px] text-gray-500 leading-normal">Kebolehan menghirarki isu mengikut keperluan konteks.</p>
+            </div>
+            <div class="flex flex-col gap-1 border-t pt-2 border-neutral-200">
+              <div class="flex justify-between items-start gap-3">
+                <span class="text-xs font-bold text-gray-700">4. Kesan Isu & Amalan (C5/HP2)</span>
+                <input type="number" id="rubricT3_B2" min="0" max="10" step="0.1" oninput="kiraSkorRubrik()" class="w-16 text-center text-xs font-bold border rounded p-1 bg-white" placeholder="/10">
+              </div>
+              <p class="text-[10px] text-gray-500 leading-normal">Kesediaan & minat menangani masalah dunia sebenar dan masalah global.</p>
+            </div>
+            <div class="flex flex-col gap-1 border-t pt-2 border-neutral-200">
+              <div class="flex justify-between items-start gap-3">
+                <span class="text-xs font-bold text-gray-700">5. Penyelesaian Masalah — Kaedah (C5/HP2)</span>
+                <input type="number" id="rubricT3_B3" min="0" max="10" step="0.1" oninput="kiraSkorRubrik()" class="w-16 text-center text-xs font-bold border rounded p-1 bg-white" placeholder="/10">
+              </div>
+              <p class="text-[10px] text-gray-500 leading-normal">Kebolehan membentuk perspektif sendiri untuk merungkai & menganalisis isu.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- KESIMPULAN (15%) -->
+        <div class="space-y-2.5">
+          <h4 class="text-xs font-extrabold text-[#1E2229] uppercase tracking-wide border-l-2 border-purple-600 pl-2">Kesimpulan (15%)</h4>
+          <div class="bg-neutral-50/60 p-3 rounded-lg border border-neutral-200 space-y-3">
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between items-start gap-3">
+                <span class="text-xs font-bold text-gray-700">6. Hujahan (C5/HP2)</span>
+                <input type="number" id="rubricT3_C1" min="0" max="5" step="0.1" oninput="kiraSkorRubrik()" class="w-16 text-center text-xs font-bold border rounded p-1 bg-white" placeholder="/5">
+              </div>
+              <p class="text-[10px] text-gray-500 leading-normal">Kebolehan mengumpul & menyisih hujahan yang paling utama.</p>
+            </div>
+            <div class="flex flex-col gap-1 border-t pt-2 border-neutral-200">
+              <div class="flex justify-between items-start gap-3">
+                <span class="text-xs font-bold text-gray-700">7. Penyelesaian Masalah (Kesimpulan)</span>
+                <input type="number" id="rubricT3_C2" min="0" max="5" step="0.1" oninput="kiraSkorRubrik()" class="w-16 text-center text-xs font-bold border rounded p-1 bg-white" placeholder="/5">
+              </div>
+              <p class="text-[10px] text-gray-500 leading-normal">Kebolehan membentuk perspektif sendiri untuk merumus penyelesaian isu.</p>
+            </div>
+            <div class="flex flex-col gap-1 border-t pt-2 border-neutral-200">
+              <div class="flex justify-between items-start gap-3">
+                <span class="text-xs font-bold text-gray-700">8. Sumber</span>
+                <input type="number" id="rubricT3_C3" min="0" max="5" step="0.1" oninput="kiraSkorRubrik()" class="w-16 text-center text-xs font-bold border rounded p-1 bg-white" placeholder="/5">
+              </div>
+              <p class="text-[10px] text-gray-500 leading-normal">Ketepatan & kebolehpercayaan sumber yang diberikan.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center pt-2 text-xs font-bold border-t">
+          <span>Jumlah Skor Kriteria (Tugasan 3):</span>
+          <span id="rubricTotalDisplay" class="bg-red-600 text-white px-2.5 py-1 rounded font-mono text-sm">0 / 50</span>
+        </div>
+      </div>
+
+      <!-- Keputusan LAM -->
+      <div class="bg-white p-5 rounded-xl border-editorial shadow-sm flex flex-col gap-3 text-xs">
+        <div class="divider-editorial pb-2">
+          <h3 class="font-display font-bold text-base">Keputusan Borang Moderasi</h3>
+          <p class="text-[11px] text-gray-400">Skrip: <span id="formAngkaGiliran" class="font-bold text-black font-mono bg-neutral-100 px-1.5 py-0.5 rounded">-</span></p>
+        </div>
+        <div class="flex justify-between items-center bg-[#FDFBF7] p-2.5 rounded border-editorial">
+          <label class="font-bold text-gray-600">(a) Markah Pemeriksa Asal</label>
+          <div class="relative w-36">
+            <input type="text" id="markahAMasked" value="SULIT (Blind Mode)" disabled class="w-full text-center font-bold bg-neutral-200 text-neutral-500 py-1 rounded border text-[11px]">
+            <input type="number" id="markahA" disabled class="w-full text-center font-bold bg-gray-100 text-gray-700 py-1 rounded border hidden">
+          </div>
+        </div>
+        <div class="flex justify-between items-center bg-white p-2.5 rounded border-editorial">
+          <label class="font-bold text-red-700">(b) Markah Moderasi P1</label>
+          <input type="number" id="markahB" oninput="kiraPerbezaanP1()" class="w-16 text-center font-bold border-red-300 py-1 rounded bg-red-50/20" disabled>
+        </div>
+        <div class="flex justify-between items-center bg-[#FDFBF7] p-2.5 rounded border-editorial">
+          <label class="font-bold text-gray-600">(c) Perbezaan Markah P1 (b-a)</label>
+          <input type="text" id="markahC" disabled value="SULIT" class="w-20 text-center font-bold bg-gray-100 py-1 rounded border text-gray-400">
+        </div>
+        <div id="pusingan2Container" class="hidden flex-col gap-2 p-2.5 bg-amber-50/50 rounded border border-amber-200 transition-all">
+          <span class="text-[9px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded-full w-max uppercase tracking-wider">Klausa: Perbezaan ≥ 5 Markah</span>
+          <div class="flex justify-between items-center">
+            <label class="font-bold text-amber-900">(d) Markah Moderasi P2</label>
+            <input type="number" id="markahD" oninput="kiraPerbezaanP2()" class="w-16 text-center font-bold border-amber-300 py-1 rounded bg-white">
+          </div>
+          <div class="flex justify-between items-center">
+            <label class="font-bold text-amber-900">(e) Perbezaan Markah P2</label>
+            <input type="text" id="markahE" disabled value="SULIT" class="w-20 text-center font-bold bg-amber-100 py-1 rounded border text-gray-400">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 border-t pt-2">
+          <div>
+            <label class="font-bold text-gray-600 block">(f) Penyelarasan (+/-)</label>
+            <input type="number" id="markahF" oninput="kiraMarkahAkhir()" class="w-full text-center font-bold border-editorial py-1 rounded mt-0.5" placeholder="0">
+          </div>
+          <div>
+            <label class="font-bold text-gray-600 block">(g) Markah Akhir</label>
+            <input type="number" id="markahG" class="w-full text-center font-bold bg-gray-900 text-white py-1 rounded mt-0.5">
+          </div>
+        </div>
+        <div class="flex flex-col gap-2 pt-2">
+          <button id="btnSimpan" onclick="simpanRekodKeSheets()"
+            class="w-full bg-[#1E2229] text-white py-2.5 px-4 font-bold rounded-lg hover:bg-black transition-all">
+            Sahkan & Hantar Skor Ke Sheets
+          </button>
+          <button onclick="cetakSkripDanContenganGlobal()"
+            class="w-full border border-red-300 bg-white hover:bg-red-50 text-red-700 py-2.5 px-4 font-bold rounded-lg transition-all flex justify-center items-center gap-2">
+            🖨️ Cetak Semua Muka Skrip (Sekaligus PDF)
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======================== MODAL TUKAR KATA LALUAN ======================== -->
+  <div id="modalTukarPassword" class="hidden fixed inset-0 bg-neutral-900/80 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+    <div class="bg-white max-w-sm w-full p-7 rounded-2xl border border-neutral-200 shadow-2xl flex flex-col gap-4">
+      <div class="text-center">
+        <span class="text-xs font-bold tracking-widest uppercase text-amber-600">Keselamatan Akaun</span>
+        <h2 class="text-xl font-display font-extrabold mt-1 text-[#1E2229]">Tukar Kata Laluan</h2>
+        <p class="text-[11px] text-gray-400 mt-1">Kata laluan baru mesti sekurang-kurangnya 6 aksara.</p>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-500 block mb-1">Akaun Emel</label>
+        <input type="email" id="tukarPassEmel" disabled
+          class="w-full px-3 py-2 border rounded-xl text-xs bg-neutral-100 text-neutral-500 font-mono">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-600 block mb-1">Kata Laluan Lama <span class="text-red-500">*</span></label>
+        <div class="relative">
+          <input type="password" id="tukarPassLama" placeholder="Masukkan kata laluan semasa"
+            class="w-full px-3 py-2.5 border rounded-xl text-xs bg-[#FDFBF7] focus:outline-none focus:border-amber-400 font-mono pr-10">
+          <button type="button" onclick="togolLihat('tukarPassLama', 'ikoLama')" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-700 text-sm" id="ikoLama">👁</button>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-600 block mb-1">Kata Laluan Baru <span class="text-red-500">*</span></label>
+        <div class="relative">
+          <input type="password" id="tukarPassBaru" placeholder="Masukkan kata laluan baru" oninput="semakKuatanPassword()"
+            class="w-full px-3 py-2.5 border rounded-xl text-xs bg-[#FDFBF7] focus:outline-none focus:border-amber-400 font-mono pr-10">
+          <button type="button" onclick="togolLihat('tukarPassBaru', 'ikoBaru')" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-700 text-sm" id="ikoBaru">👁</button>
+        </div>
+        <div id="kuatanBar" class="mt-1.5 h-1.5 rounded-full bg-neutral-200 overflow-hidden">
+          <div id="kuatanFill" class="h-full rounded-full transition-all duration-300 w-0 bg-red-400"></div>
+        </div>
+        <p id="kuatanLabel" class="text-[10px] text-gray-400 mt-0.5"></p>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-600 block mb-1">Sahkan Kata Laluan Baru <span class="text-red-500">*</span></label>
+        <div class="relative">
+          <input type="password" id="tukarPassSahkan" placeholder="Ulangi kata laluan baru" oninput="semakPadanan()"
+            class="w-full px-3 py-2.5 border rounded-xl text-xs bg-[#FDFBF7] focus:outline-none focus:border-amber-400 font-mono pr-10">
+          <button type="button" onclick="togolLihat('tukarPassSahkan', 'ikoSahkan')" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-700 text-sm" id="ikoSahkan">👁</button>
+        </div>
+        <p id="padananLabel" class="text-[10px] mt-0.5"></p>
+      </div>
+      <p id="tukarPassMsg" class="hidden text-[11px] font-bold text-center p-2 rounded-lg"></p>
+      <div class="flex gap-2 pt-1">
+        <button onclick="tutupModalTukarPass()"
+          class="flex-1 border border-neutral-300 hover:bg-neutral-50 text-neutral-600 font-bold py-2.5 rounded-xl text-xs transition-all">
+          Batal
+        </button>
+        <button onclick="hantarTukarPassword()" id="btnHantarTukar"
+          class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow-sm">
+          Kemaskini Kata Laluan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== BULK PRINT CONTAINER ======================== -->
+  <div id="bulkPrintContainer"></div>
+
+  <div id="printFooterSummary" style="display:none">
+    <div class="grid grid-cols-2 gap-6 p-5 border-2 border-black rounded-lg text-xs">
+      <div>
+        <p class="font-bold uppercase text-sm mb-2 text-red-700">Bukti Verifikasi Semakan (Digital Multi-Color Canvas)</p>
+        <p class="mt-1">Angka Giliran Pelajar: <span id="pStudent" class="font-mono font-bold text-sm bg-neutral-100 px-1 rounded">-</span></p>
+        <p>Fasa Aras Saringan: <span id="pFasa" class="font-bold">-</span></p>
+        <p>Moderator Pemeriksa: <span id="pLecturer" class="font-bold">-</span></p>
+      </div>
+      <div class="text-right flex flex-col justify-between">
+        <div>
+          <p class="font-bold text-sm text-gray-600">Skor Akhir Keputusan Moderasi</p>
+          <p class="text-2xl font-bold text-red-600 font-mono mt-1"><span id="pScore">-</span> / 50 M</p>
+        </div>
+        <p class="text-[10px] text-gray-400 italic">Dokumen ini mengandungi bukti contengan warna rasmi yang sah dari IPG Kampus Darulaman.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== JAVASCRIPT ======================== -->
+  <script>
+    // ---- Pembolehubah Sesi ----
+    let emelPensyarahAktif = '';
+    let _sesiPassword = '';
+    let globalSkripInduk = [];
+    let globalHasilSemakan = [];
+    let globalRubrikAktif = null;
+    let fasaSemasa = 'Fasa1';
+    let subArasSemasa = 'Semua';
+    let pelajarSemasa = null;
+    let urlAPI = 'GANTI_DENGAN_URL_WEB_APP_APPS_SCRIPT_ANDA';
+
+    // ---- PDF ----
+    let currentPdfDoc = null;
+    let currentPdfPageNum = 1;
+    let totalPdfPages = 0;
+
+    // ---- Anotasi & Catatan per halaman ----
+    let allPagesAnnotations = {};
+    let allPagesComments    = {};
+
+    let warnaPenSemasa = '#D9383A';
+    const canvas = document.getElementById('scriptCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let pageStrokes = [];
+
+    let _lakaranTitikTerakhir = null;
+    const JARAK_MIN_TITIK = 2.5;
+
+    // ---- Admin Semak Mod ----
+    let globalNamaLecturers  = [];
+    let adminSemakMod        = false;
+    let adminEmelTonton      = '';
+    let adminSkripTonton     = null;
+    let adminAllPagesOverlay = {};
+    let adminPageOverlayStrokes = [];
+    let adminAllPagesComments   = {};
+
+    let modeRumusanSemasa = 'keseluruhan';
+
+    // ---- RUBRIK TUGASAN 3 (Jumlah Max 50 Markah) ----
+    const KRITERIA_T3 = {
+      T3_A1: { label: "Persembahan Idea & Penilaian Isu",        max: 5  },
+      T3_A2: { label: "Penaakulan Kritis & Analitikal (KKG3)",   max: 5  },
+      T3_B1: { label: "Kebolehan Huraian Isu (KKG3)",            max: 5  },
+      T3_B2: { label: "Kesan Isu & Amalan (C5/HP2)",             max: 10 },
+      T3_B3: { label: "Penyelesaian Masalah - Kaedah (C5/HP2)",  max: 10 },
+      T3_C1: { label: "Hujahan (C5/HP2)",                        max: 5  },
+      T3_C2: { label: "Penyelesaian Masalah (Kesimpulan)",       max: 5  },
+      T3_C3: { label: "Sumber",                                  max: 5  }
+    };
+    const KEYS_T3 = Object.keys(KRITERIA_T3);
+    const JUMLAH_MAX_T3 = KEYS_T3.reduce((s, k) => s + KRITERIA_T3[k].max, 0); // 50
+
+    window.onload = () => {
+      const dipulihkan = cubaPulihkanSesi();
+      if (!dipulihkan) document.getElementById('lecturerEmailInput').focus();
+    };
+
+    function tunjukNotifikasi(mesej, jenis = 'info') {
+      let toast = document.getElementById('customToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'customToast';
+        toast.className = 'fixed bottom-5 right-5 z-50 transform translate-y-10 opacity-0 transition-all duration-300 max-w-sm w-full p-4 rounded-xl shadow-2xl border text-xs font-bold flex items-center gap-3';
+        document.body.appendChild(toast);
+      }
+      const warna = {
+        success: 'bg-green-50 border-green-200 text-green-800',
+        error: 'bg-red-50 border-red-200 text-red-800',
+        warning: 'bg-amber-50 border-amber-200 text-amber-800',
+        info: 'bg-blue-50 border-blue-200 text-blue-800'
+      };
+      const ikon = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+      toast.className = `fixed bottom-5 right-5 z-50 transform transition-all duration-300 max-w-sm w-full p-4 rounded-xl shadow-2xl border text-xs font-bold flex items-center gap-3 ${warna[jenis]}`;
+      toast.innerHTML = `<span>${ikon[jenis]}</span> <div>${mesej}</div>`;
+      setTimeout(() => { toast.classList.remove('translate-y-10', 'opacity-0'); }, 10);
+      setTimeout(() => { toast.classList.add('translate-y-10', 'opacity-0'); }, 8500);
+    }
+
+    function tukarWarnaPenSemasa(hexColor, idName) {
+      warnaPenSemasa = hexColor;
+      ['Merah','Hijau','Ungu'].forEach(c => {
+        document.getElementById(`btnPen${c}`).className =
+          "flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-md text-gray-500 hover:bg-white/60 transition-all";
+      });
+      const map = { merah: "border-red-200 text-red-600", hijau: "border-green-200 text-green-600", ungu: "border-purple-200 text-purple-600" };
+      const id = idName.charAt(0).toUpperCase() + idName.slice(1);
+      document.getElementById(`btnPen${id}`).className =
+        `flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-md bg-white border ${map[idName]} shadow-sm transition-all`;
+    }
+
+    // ---- LOGIN ----
+    function masukDashboardSelepasLogin(res, password, simpanSesi) {
+      emelPensyarahAktif = res.email;
+      _sesiPassword = password;
+      document.getElementById('activeLecturerBadge').innerText = `${res.nama} (${res.peranan})`;
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('lecturerPasswordInput').value = '';
+      if (res.peranan === "Admin") {
+        document.getElementById('adminDashboardPanel').classList.remove('hidden');
+      }
+      if (simpanSesi) {
+        try { sessionStorage.setItem('sesiModerasiGKKO', JSON.stringify({ email: res.email, password })); } catch (e) {}
+      }
+      sambungkanAPI();
+    }
+
+    function sahkanLoginPensyarah() {
+      const email = document.getElementById('lecturerEmailInput').value.trim();
+      const password = document.getElementById('lecturerPasswordInput').value.trim();
+      const errBox = document.getElementById('loginErrorMsg');
+      const btn = document.getElementById('btnLoginSubmit');
+      errBox.classList.add('hidden');
+
+      if (!email || !password) {
+        errBox.innerText = "Sila lengkapkan emel rasmi dan kata laluan.";
+        errBox.classList.remove('hidden');
+        return;
+      }
+      btn.innerText = "Sedang Mengesahkan..."; btn.disabled = true;
+
+      fetch(urlAPI, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "login", email, password })
+      })
+      .then(r => r.json())
+      .then(res => {
+        btn.innerText = "Sahkan & Masuk Dashboard"; btn.disabled = false;
+        if (res.status !== "success") {
+          errBox.innerText = res.message || "Emel atau Kata Laluan tidak sah.";
+          errBox.classList.remove('hidden');
+          document.getElementById('lecturerPasswordInput').value = '';
+          return;
+        }
+        masukDashboardSelepasLogin(res, password, true);
+      })
+      .catch(() => {
+        btn.innerText = "Sahkan & Masuk Dashboard"; btn.disabled = false;
+        errBox.innerText = "Ralat sambungan ke server. Sila cuba lagi.";
+        errBox.classList.remove('hidden');
+      });
+    }
+
+    function cubaPulihkanSesi() {
+      let sesi = null;
+      try { sesi = JSON.parse(sessionStorage.getItem('sesiModerasiGKKO') || 'null'); } catch (e) {}
+      if (!sesi || !sesi.email || !sesi.password) return false;
+
+      fetch(urlAPI, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "login", email: sesi.email, password: sesi.password })
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (res.status === "success") { masukDashboardSelepasLogin(res, sesi.password, false); }
+        else { sessionStorage.removeItem('sesiModerasiGKKO'); document.getElementById('lecturerEmailInput').focus(); }
+      })
+      .catch(() => { document.getElementById('lecturerEmailInput').focus(); });
+      return true;
+    }
+
+    function logoutPensyarah() {
+      _sesiPassword = ''; emelPensyarahAktif = '';
+      try { sessionStorage.removeItem('sesiModerasiGKKO'); } catch (e) {}
+      window.location.reload();
+    }
+
+    // ---- Load Data Selepas Login ----
+    function sambungkanAPI() {
+      fetch(urlAPI).then(r => r.json()).then(data => {
+        document.getElementById('infoIpg').innerText = data.konfigurasi["IPG Kampus"] || '-';
+        document.getElementById('infoKursus').innerText = data.konfigurasi["Nama Kursus"] || '-';
+        document.getElementById('infoKod').innerText = data.konfigurasi["Kod Kursus"] || '-';
+        document.getElementById('infoProgram').innerText = data.konfigurasi["Program"] || '-';
+        document.getElementById('infoSemester').innerText = data.konfigurasi["Semester/Tahun"] || '-';
+        globalNamaLecturers = data.pensyarah || [];
+        globalSkripInduk = data.skripInduk;
+        globalHasilSemakan = data.hasilSemakan;
+        globalRubrikAktif = data.rubrikAktif || null;
+        paparRubrikAktifInfo();
+        binaSenaraiPelajar();
+        if (adminSemakMod && adminEmelTonton) binaSenaraiPelajarAdmin(adminEmelTonton);
+      });
+    }
+
+    function paparRubrikAktifInfo() {
+      const adaRubrik = !!(globalRubrikAktif && globalRubrikAktif.namaFail);
+      const infoEl = document.getElementById('rubrikAktifInfo');
+      const tiadaEl = document.getElementById('rubrikTiadaInfo');
+      if (infoEl) infoEl.classList.toggle('hidden', !adaRubrik);
+      if (tiadaEl) tiadaEl.classList.toggle('hidden', adaRubrik);
+      if (adaRubrik) {
+        document.getElementById('rubrikAktifNama').innerText = globalRubrikAktif.namaFail;
+        const tarikh = globalRubrikAktif.tarikhUpload ? new Date(globalRubrikAktif.tarikhUpload).toLocaleString('ms-MY') : '-';
+        document.getElementById('rubrikAktifTarikh').innerText = tarikh;
+      }
+    }
+
+    function binaSenaraiPelajar() {
+      const container = document.getElementById('studentList');
+      container.innerHTML = '';
+      let list = fasaSemasa === 'Fasa1'
+        ? globalSkripInduk.filter(p => p.fasaModerasi.startsWith("P1:"))
+        : globalSkripInduk.filter(p => {
+            if (!p.fasaModerasi.startsWith("P2:")) return false;
+            return subArasSemasa === 'Semua' || p.fasaModerasi.includes(subArasSemasa);
+          });
+
+      list.forEach(p => {
+        const rekod = globalHasilSemakan.find(
+          i => i.angkaGiliran.toString().trim() === p.angkaGiliran.toString().trim() &&
+               i.emelPensyarah === emelPensyarahAktif);
+        const warnaTag = p.fasaModerasi.startsWith("P1:")
+          ? 'bg-blue-100 text-blue-800'
+          : p.fasaModerasi.includes('Amat Cemerlang') ? 'bg-green-100 text-green-800'
+          : p.fasaModerasi.includes('Sederhana') ? 'bg-amber-100 text-amber-800'
+          : 'bg-red-100 text-red-800';
+        const selected = pelajarSemasa && pelajarSemasa.angkaGiliran.toString().trim() === p.angkaGiliran.toString().trim();
+        const div = document.createElement('div');
+        div.className = `flex justify-between items-center p-2.5 border-editorial rounded-lg bg-white hover:bg-neutral-50 cursor-pointer transition-all text-xs ${selected ? 'ring-2 ring-black' : ''}`;
+        div.onclick = () => pilihPelajar(p, rekod);
+        div.innerHTML = `
+          <div>
+            <p class="font-bold text-[#1E2229] font-mono">${p.angkaGiliran}</p>
+            <span class="inline-block text-[9px] px-1.5 py-0.5 rounded font-semibold mt-0.5 ${warnaTag}">${p.fasaModerasi}</span>
+          </div>
+          <div class="text-right">
+            <p class="${rekod ? 'text-green-600 font-bold' : 'text-gray-400'}">${rekod ? '✓ Selesai' : 'Belum Semak'}</p>
+          </div>`;
+        container.appendChild(div);
+      });
+    }
+
+    function tukarFasa(fasa) {
+      fasaSemasa = fasa;
+      ['tabFasa1','tabFasa2'].forEach(id => {
+        document.getElementById(id).className = "fasa-tab py-2 text-xs font-medium rounded-md text-gray-600 hover:bg-neutral-100";
+      });
+      document.getElementById(`tab${fasa}`).className = "fasa-tab py-2 text-xs font-medium rounded-md active";
+      document.getElementById('subPenapisFasa2').classList.toggle('hidden', fasa !== 'Fasa2');
+      binaSenaraiPelajar();
+    }
+
+    function setSubAras(aras) { subArasSemasa = aras; binaSenaraiPelajar(); }
+
+    // ---- Pilih Pelajar ----
+    function pilihPelajar(indukPelajar, rekodSediaAda) {
+      adminSemakMod = false; adminEmelTonton = ''; adminSkripTonton = null;
+      adminAllPagesOverlay = {}; adminPageOverlayStrokes = []; adminAllPagesComments = {};
+      document.getElementById('adminSemakBanner').classList.add('hidden');
+
+      setRubricInputsDisabled(false);
+
+      if (currentPdfDoc) {
+        allPagesAnnotations[currentPdfPageNum] = pageStrokes;
+        allPagesComments[currentPdfPageNum] = document.getElementById('catatanInput').value;
+      }
+
+      pelajarSemasa = JSON.parse(JSON.stringify(indukPelajar));
+      binaSenaraiPelajar();
+      document.getElementById('formAngkaGiliran').innerText = indukPelajar.angkaGiliran;
+      document.getElementById('markahA').value = indukPelajar.markahPemeriksa;
+
+      document.getElementById('markahB').value = rekodSediaAda?.markahModerasiP1 ?? '';
+      document.getElementById('markahC').value = rekodSediaAda?.perbezaanP1 ?? '';
+      document.getElementById('markahD').value = rekodSediaAda?.markahModerasiP2 ?? '';
+      document.getElementById('markahE').value = rekodSediaAda?.perbezaanP2 ?? '';
+      document.getElementById('markahF').value = rekodSediaAda?.markahPenyelarasan ?? '';
+      document.getElementById('markahG').value = rekodSediaAda?.markahAkhir ?? indukPelajar.markahPemeriksa;
+
+      KEYS_T3.forEach(id => {
+        document.getElementById(`rubric${id}`).value = rekodSediaAda ? (rekodSediaAda[id.toLowerCase()] ?? '') : '';
+      });
+
+      if (rekodSediaAda) {
+        const jumlah = KEYS_T3.reduce((s,k) => s + (parseFloat(rekodSediaAda[k.toLowerCase()]) || 0), 0);
+        document.getElementById('rubricTotalDisplay').innerText = `${jumlah} / ${JUMLAH_MAX_T3}`;
+      } else {
+        document.getElementById('rubricTotalDisplay').innerText = `0 / ${JUMLAH_MAX_T3}`;
+      }
+
+      kiraPerbezaanP1();
+
+      document.getElementById('canvasPlaceholder').innerHTML =
+        `<p class="font-bold text-amber-700">Membuka fail PDF dari Google Drive Admin...</p>`;
+      canvas.classList.add('hidden');
+      document.getElementById('pdfNavigationControls').classList.add('hidden');
+      document.getElementById('catatanContainer').classList.add('hidden');
+
+      currentPdfDoc = null;
+      allPagesAnnotations = {};
+      allPagesComments = {};
+      pageStrokes = [];
+
+      if (rekodSediaAda?.dataLakaran) {
+        try {
+          const parsed = JSON.parse(rekodSediaAda.dataLakaran);
+          if (parsed.annotations !== undefined) {
+            allPagesAnnotations = parsed.annotations || {};
+            allPagesComments    = parsed.comments    || {};
+          } else {
+            allPagesAnnotations = parsed;
+          }
+        } catch(e) { console.error("Ralat pemulihan lakaran:", e); }
+      }
+
+      muatPdfBerpusatDariAdmin(indukPelajar.urlSkrip);
+    }
+
+    function setRubricInputsDisabled(isDisabled) {
+      KEYS_T3.forEach(id => { document.getElementById(`rubric${id}`).disabled = isDisabled; });
+      document.getElementById('markahB').disabled = true;
+      document.getElementById('markahD').disabled = true;
+    }
+
+    // ---- Admin Upload ----
+    function lakukanUploadAdminKeDrive() {
+      const studentId = document.getElementById('adminStudentNumberInput').value.trim();
+      const fasaSelect = document.getElementById('adminFasaSelect').value;
+      const markahA = document.getElementById('adminMarkahAInput').value.trim();
+      const fileInput = document.getElementById('adminFileUploader').files[0];
+      const btn = document.getElementById('btnAdminUpload');
+      if (!studentId || !fileInput || !markahA) { tunjukNotifikasi("Sila isi Angka Giliran, Markah Asal dan pilih Fail PDF.", "warning"); return; }
+      btn.innerText = "Sedang Menyimpan..."; btn.disabled = true;
+      const reader = new FileReader();
+      reader.onload = e => {
+        fetch(urlAPI, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: "adminUploadScript",
+            adminEmail: emelPensyarahAktif,
+            adminPassword: _sesiPassword,
+            angkaGiliran: studentId,
+            fasaModerasi: fasaSelect,
+            markahPemeriksa: markahA,
+            fileData: e.target.result
+          })
+        }).then(r => r.json()).then(res => {
+          btn.innerText = "Daftar Pelajar & Simpan Fail Ke Cloud"; btn.disabled = false;
+          if (res.status === "error") { tunjukNotifikasi("Ralat: " + res.message, "error"); }
+          else {
+            tunjukNotifikasi(`Sukses! Skrip ${studentId} berjaya disimpan.`, "success");
+            document.getElementById('adminStudentNumberInput').value = '';
+            document.getElementById('adminMarkahAInput').value = '';
+            document.getElementById('adminFileUploader').value = '';
+            sambungkanAPI();
+          }
+        }).catch(() => {
+          tunjukNotifikasi("Ralat sambungan.", "error"); btn.innerText = "Daftar Pelajar & Simpan Fail Ke Cloud"; btn.disabled = false;
+        });
+      };
+      reader.readAsDataURL(fileInput);
+    }
+
+    // ---- Kira Markah Rubrik ----
+    function kiraSkorRubrik() {
+      KEYS_T3.forEach(id => {
+        const el = document.getElementById(`rubric${id}`);
+        const max = KRITERIA_T3[id].max;
+        if (parseFloat(el.value) > max) el.value = max;
+        if (parseFloat(el.value) < 0) el.value = 0;
+      });
+
+      const jumlah = KEYS_T3.reduce((s, id) => s + (parseFloat(document.getElementById(`rubric${id}`).value) || 0), 0);
+      const jumlahFormatted = Number(jumlah.toFixed(2));
+      document.getElementById('rubricTotalDisplay').innerText = `${jumlahFormatted} / ${JUMLAH_MAX_T3}`;
+
+      const p2Aktif = !document.getElementById('pusingan2Container').classList.contains('hidden');
+      if (fasaSemasa === 'Fasa1' || !p2Aktif) {
+        document.getElementById('markahB').value = jumlahFormatted; kiraPerbezaanP1();
+      } else {
+        document.getElementById('markahD').value = jumlahFormatted; kiraPerbezaanP2();
+      }
+    }
+
+    // ---- Muat PDF ----
+    function muatPdfBerpusatDariAdmin(fileId) {
+      if (!fileId || fileId === "") {
+        document.getElementById('canvasPlaceholder').innerHTML =
+          `<span class="text-red-600 font-bold">Skrip Belum Diupload.</span><br><p class="text-xs text-gray-500 mt-1">Admin belum memuat naik PDF untuk pelajar ini.</p>`;
+        return;
+      }
+      fetch(urlAPI + "?action=fetchPdfProxy&id=" + fileId)
+        .then(r => r.text())
+        .then(b64 => {
+          if (b64.startsWith("ERROR")) throw new Error(b64);
+          const raw = atob(b64);
+          const arr = new Uint8Array(raw.length);
+          for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+          pdfjsLib.getDocument({ data: arr }).promise.then(pdf => {
+            currentPdfDoc = pdf;
+            totalPdfPages = pdf.numPages;
+            currentPdfPageNum = 1;
+            document.getElementById('pdfTotalPagesNum').innerText = totalPdfPages;
+            document.getElementById('pdfNavigationControls').classList.remove('hidden');
+            document.getElementById('catatanContainer').classList.remove('hidden');
+            renderHalamanPdfSemasa();
+          });
+        })
+        .catch(() => {
+          document.getElementById('canvasPlaceholder').innerHTML =
+            `<span class="text-red-500 font-bold">Gagal Menarik Fail Cloud.</span>`;
+        });
+    }
+
+    function renderHalamanPdfSemasa() {
+      if (!currentPdfDoc) return;
+      document.getElementById('pdfCurrentPageNum').innerText = currentPdfPageNum;
+      document.getElementById('catatanHalamanLabel').innerText = currentPdfPageNum;
+      document.getElementById('catatanInput').value = allPagesComments[currentPdfPageNum] || allPagesComments[String(currentPdfPageNum)] || '';
+
+      currentPdfDoc.getPage(currentPdfPageNum).then(page => {
+        const vp = page.getViewport({ scale: 1.5 });
+        canvas.width = 800;
+        const sf = 800 / vp.width;
+        canvas.height = vp.height * sf;
+        page.render({ canvasContext: ctx, viewport: page.getViewport({ scale: 1.5 * sf }) }).promise.then(() => {
+          document.getElementById('canvasPlaceholder').classList.add('hidden');
+          canvas.classList.remove('hidden');
+
+          if (!allPagesAnnotations[currentPdfPageNum]) {
+            if (allPagesAnnotations[String(currentPdfPageNum)]) {
+              allPagesAnnotations[currentPdfPageNum] = allPagesAnnotations[String(currentPdfPageNum)];
+            } else {
+              allPagesAnnotations[currentPdfPageNum] = [];
+            }
+          }
+          pageStrokes = allPagesAnnotations[currentPdfPageNum];
+
+          lukisSemulaLakaranHalaman();
+          setupCanvasEventListeners();
+        });
+      });
+    }
+
+    function tukarHalamanPdf(arah) {
+      const sasaran = currentPdfPageNum + arah;
+      if (sasaran >= 1 && sasaran <= totalPdfPages) {
+        if (adminSemakMod) {
+          adminAllPagesOverlay[currentPdfPageNum]  = adminPageOverlayStrokes;
+          adminAllPagesComments[currentPdfPageNum] = document.getElementById('catatanInput').value;
+        } else {
+          allPagesAnnotations[currentPdfPageNum] = pageStrokes;
+          allPagesComments[currentPdfPageNum]    = document.getElementById('catatanInput').value;
+        }
+        currentPdfPageNum = sasaran;
+        adminSemakMod ? renderHalamanAdminSemasa() : renderHalamanPdfSemasa();
+      }
+    }
+
+    // ---- Catatan bertaip ----
+    function simpanCatatanHalaman(btn) {
+      const val = document.getElementById('catatanInput').value;
+      if (adminSemakMod) { adminAllPagesComments[currentPdfPageNum] = val; }
+      else { allPagesComments[currentPdfPageNum] = val; }
+      btn.innerText = "✓ Tersimpan";
+      btn.className = btn.className.replace('bg-[#1E2229]', 'bg-green-600');
+      setTimeout(() => { btn.innerText = "Simpan Catatan"; btn.className = btn.className.replace('bg-green-600', 'bg-[#1E2229]'); }, 1500);
+    }
+
+    function insertTemplate(txt) {
+      const el = document.getElementById('catatanInput');
+      el.value = el.value + txt;
+      el.focus();
+    }
+
+    // ---- Canvas ----
+    function setupCanvasEventListeners() {
+      canvas.onmousedown = e => { isDrawing = true; _lakaranTitikTerakhir = null; mulakanLakaran(e); };
+      canvas.onmousemove = e => { jikaMelakar(e); };
+      canvas.onmouseup   = () => { isDrawing = false; _lakaranTitikTerakhir = null; };
+      canvas.ontouchstart = e => { isDrawing = true; _lakaranTitikTerakhir = null; mulakanLakaran(e.touches[0]); e.preventDefault(); };
+      canvas.ontouchmove  = e => { jikaMelakar(e.touches[0]); e.preventDefault(); };
+      canvas.ontouchend   = () => { isDrawing = false; _lakaranTitikTerakhir = null; };
+    }
+
+    function mulakanLakaran(e) {
+      const r = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / r.width;
+      const scaleY = canvas.height / r.height;
+      const x = (e.clientX - r.left) * scaleX;
+      const y = (e.clientY - r.top) * scaleY;
+
+      ctx.strokeStyle = warnaPenSemasa; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(x, y);
+
+      const strokeList = adminSemakMod ? adminPageOverlayStrokes : pageStrokes;
+      strokeList.push({ type: 'start', x, y, color: warnaPenSemasa });
+      _lakaranTitikTerakhir = { x, y };
+
+      if (adminSemakMod) { adminAllPagesOverlay[currentPdfPageNum] = adminPageOverlayStrokes; }
+      else { allPagesAnnotations[currentPdfPageNum] = pageStrokes; }
+    }
+
+    function jikaMelakar(e) {
+      if (!isDrawing) return;
+      const r = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / r.width;
+      const scaleY = canvas.height / r.height;
+      const x = (e.clientX - r.left) * scaleX;
+      const y = (e.clientY - r.top) * scaleY;
+
+      if (_lakaranTitikTerakhir) {
+        const dx = x - _lakaranTitikTerakhir.x;
+        const dy = y - _lakaranTitikTerakhir.y;
+        const jarakKuasaDua = dx * dx + dy * dy;
+        if (jarakKuasaDua < (JARAK_MIN_TITIK * JARAK_MIN_TITIK)) {
+          ctx.strokeStyle = warnaPenSemasa; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          ctx.lineTo(x, y); ctx.stroke();
+          return;
+        }
+      }
+
+      ctx.strokeStyle = warnaPenSemasa; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.lineTo(x, y); ctx.stroke();
+
+      const strokeList = adminSemakMod ? adminPageOverlayStrokes : pageStrokes;
+      strokeList.push({ type: 'move', x, y, color: warnaPenSemasa });
+      _lakaranTitikTerakhir = { x, y };
+
+      if (adminSemakMod) { adminAllPagesOverlay[currentPdfPageNum] = adminPageOverlayStrokes; }
+      else { allPagesAnnotations[currentPdfPageNum] = pageStrokes; }
+    }
+
+    function clearCanvasPageOnly() {
+      if (confirm("Kosongkan lakaran halaman ini?")) {
+        if (adminSemakMod) { adminPageOverlayStrokes = []; adminAllPagesOverlay[currentPdfPageNum] = []; renderHalamanAdminSemasa(); }
+        else { pageStrokes = []; allPagesAnnotations[currentPdfPageNum] = []; renderHalamanPdfSemasa(); }
+      }
+    }
+
+    function lukisSemulaLakaranHalaman() {
+      const strokes = allPagesAnnotations[currentPdfPageNum] || allPagesAnnotations[String(currentPdfPageNum)] || [];
+      strokes.forEach(pt => {
+        ctx.strokeStyle = pt.color || '#D9383A'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        if (pt.type === 'start') { ctx.beginPath(); ctx.moveTo(pt.x, pt.y); }
+        else if (pt.type === 'move') { ctx.lineTo(pt.x, pt.y); ctx.stroke(); }
+      });
+    }
+
+    // ---- Kira Perbezaan Markah ----
+    function kiraPerbezaanP1() {
+      const a = parseFloat(document.getElementById('markahA').value) || 0;
+      const b = parseFloat(document.getElementById('markahB').value) || 0;
+      const c = Number((b - a).toFixed(2));
+      document.getElementById('markahC').value = emelPensyarahAktif && globalNamaLecturers.find(l => l.email === emelPensyarahAktif && l.peranan === "Admin") ? c + " M" : "SULIT";
+      const p2 = document.getElementById('pusingan2Container');
+      if (Math.abs(c) >= 5) { p2.classList.remove('hidden'); kiraPerbezaanP2(); }
+      else { p2.classList.add('hidden'); document.getElementById('markahD').value = ''; document.getElementById('markahE').value = 'SULIT'; kiraMarkahAkhir(); }
+    }
+
+    function kiraPerbezaanP2() {
+      const a = parseFloat(document.getElementById('markahA').value) || 0;
+      const d = parseFloat(document.getElementById('markahD').value) || 0;
+      const isAdmin = globalNamaLecturers.find(l => l.email === emelPensyarahAktif && l.peranan === "Admin");
+      document.getElementById('markahE').value = isAdmin ? Number((d - a).toFixed(2)) + " M" : "SULIT";
+      kiraMarkahAkhir();
+    }
+
+    function kiraMarkahAkhir() {
+      const a = parseFloat(document.getElementById('markahA').value) || 0;
+      const f = parseFloat(document.getElementById('markahF').value) || 0;
+      document.getElementById('markahG').value = Number((a + f).toFixed(2));
+    }
+
+    // ---- Sambungan Hub Rangkaian Selamat ----
+    function fetchDenganTimeout(url, options, timeoutMs) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs || 20000);
+      return fetch(url, Object.assign({}, options, { signal: controller.signal })).finally(() => clearTimeout(timer));
+    }
+
+    async function fetchJSONSelamat(url, options, timeoutMs, percubaanMaks) {
+      let ralatTerakhir = null;
+      const maks = percubaanMaks || 2;
+      for (let cubaan = 1; cubaan <= maks; cubaan++) {
+        try {
+          const res = await fetchDenganTimeout(url, options, timeoutMs || 20000);
+          const teks = await res.text();
+          try { return JSON.parse(teks); }
+          catch (eParse) { throw new Error('Respons server tidak sah/tidak lengkap (bukan JSON). ' + teks.substring(0, 150)); }
+        } catch (err) {
+          ralatTerakhir = err;
+          if (cubaan < maks) await new Promise(r => setTimeout(r, 1200));
+        }
+      }
+      throw ralatTerakhir;
+    }
+
+    async function semakRekodTelahDisimpan(payload) {
+      try {
+        const res = await fetchDenganTimeout(urlAPI, {}, 15000);
+        const data = await res.json();
+        const kunci = payload.emelPensyarah + '-' + payload.angkaGiliran;
+        const rekod = (data.hasilSemakan || []).find(h => h.kunciUnik === kunci);
+        if (!rekod) return false;
+        return String(rekod.markahAkhir) === String(payload.markahAkhir);
+      } catch (e) { return false; }
+    }
+
+    async function semakAnotasiAdminTelahDisimpan(payloadOverlay) {
+      try {
+        const res = await fetchDenganTimeout(urlAPI, {}, 15000);
+        const data = await res.json();
+        const kunci = payloadOverlay.emelPensyarah + '-' + payloadOverlay.angkaGiliran;
+        const rekod = (data.hasilSemakan || []).find(h => h.kunciUnik === kunci);
+        if (!rekod) return false;
+        if (payloadOverlay.markahAkhir !== undefined && payloadOverlay.markahAkhir !== '') {
+          return String(rekod.markahAkhir) === String(payloadOverlay.markahAkhir);
+        }
+        return !!(rekod.dataLakaran && rekod.dataLakaran.length > 0);
+      } catch (e) { return false; }
+    }
+
+    // ---- Simpan Ke Sheets ----
+    function simpanRekodKeSheets() {
+      if (adminSemakMod) {
+        tunjukNotifikasi("Anda sedang dalam Mod Semak Admin. Sila guna butang '💾 Simpan Anotasi Admin' di panel atas.", "warning");
+        return;
+      }
+      if (!pelajarSemasa || !emelPensyarahAktif) return;
+      if (currentPdfDoc) {
+        allPagesAnnotations[currentPdfPageNum] = pageStrokes;
+        allPagesComments[currentPdfPageNum] = document.getElementById('catatanInput').value;
+      }
+
+      const dataLakaran = JSON.stringify({ annotations: allPagesAnnotations, comments: allPagesComments });
+
+      const payload = {
+        angkaGiliran: pelajarSemasa.angkaGiliran,
+        emelPensyarah: emelPensyarahAktif,
+        password: _sesiPassword,
+        fasaModerasi: pelajarSemasa.fasaModerasi,
+        markahPemeriksa: document.getElementById('markahA').value,
+
+        t3_a1: document.getElementById('rubricT3_A1').value,
+        t3_a2: document.getElementById('rubricT3_A2').value,
+        t3_b1: document.getElementById('rubricT3_B1').value,
+        t3_b2: document.getElementById('rubricT3_B2').value,
+        t3_b3: document.getElementById('rubricT3_B3').value,
+        t3_c1: document.getElementById('rubricT3_C1').value,
+        t3_c2: document.getElementById('rubricT3_C2').value,
+        t3_c3: document.getElementById('rubricT3_C3').value,
+
+        markahModerasiP1: document.getElementById('markahB').value,
+        perbezaanP1: (parseFloat(document.getElementById('markahB').value) || 0) - (parseFloat(document.getElementById('markahA').value) || 0),
+        markahModerasiP2: document.getElementById('markahD').value,
+        perbezaanP2: document.getElementById('markahD').value
+          ? (parseFloat(document.getElementById('markahD').value) || 0) - (parseFloat(document.getElementById('markahA').value) || 0) : '',
+        markahPenyelarasan: document.getElementById('markahF').value,
+        markahAkhir: document.getElementById('markahG').value,
+        dataLakaran
+      };
+
+      const btn = document.getElementById('btnSimpan');
+      btn.innerText = "Menghantar..."; btn.disabled = true;
+
+      fetchJSONSelamat(urlAPI, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }, 25000, 2)
+        .then(res => {
+          btn.innerText = "Sahkan & Hantar Skor Ke Sheets"; btn.disabled = false;
+          if (res.status === "error") { tunjukNotifikasi("Ralat: " + res.message, "error"); return; }
+          tunjukNotifikasi("Berjaya disimpan ke dalam Helaian 'Hasil_Semakan_Pensyarah'.", "success");
+          sambungkanAPI();
+        })
+        .catch(async (err) => {
+          btn.innerText = "Sahkan & Hantar Skor Ke Sheets"; btn.disabled = false;
+          const mesejSebenar = (err && err.message) ? err.message : String(err);
+          console.error("RALAT SEBENAR simpanRekodKeSheets:", err);
+          const disahkan = await semakRekodTelahDisimpan(payload);
+          if (disahkan) {
+            tunjukNotifikasi("⚠️ Sambungan tidak stabil, tetapi data telah selamat ditulis pada Sheets.", "warning");
+            sambungkanAPI();
+          } else {
+            alert("RALAT PENUH (debug) — Simpan Rekod Pensyarah:\n\n" + mesejSebenar);
+            tunjukNotifikasi("❌ RALAT SEBENAR: " + mesejSebenar, "error");
+          }
+        });
+    }
+
+    // ---- CETAKAN BULK ----
+    async function cetakSkripDanContenganGlobal() {
+      if (!pelajarSemasa || !currentPdfDoc) {
+        tunjukNotifikasi("Sila pilih skrip pelajar yang sah terlebih dahulu.", "warning");
+        return;
+      }
+
+      allPagesAnnotations[currentPdfPageNum] = pageStrokes;
+      allPagesComments[currentPdfPageNum] = document.getElementById('catatanInput').value;
+
+      const printContainer = document.getElementById('bulkPrintContainer');
+      printContainer.innerHTML = '';
+
+      for (let pNum = 1; pNum <= totalPdfPages; pNum++) {
+        const pageBlock = document.createElement('div');
+        pageBlock.className = 'print-page-block';
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.className = 'print-canvas-element';
+        pageBlock.appendChild(tempCanvas);
+
+        const page = await currentPdfDoc.getPage(pNum);
+        const vp = page.getViewport({ scale: 1.5 });
+        tempCanvas.width = 800;
+        const sf = 800 / vp.width;
+        tempCanvas.height = vp.height * sf;
+
+        const pCtx = tempCanvas.getContext('2d');
+        await page.render({ canvasContext: pCtx, viewport: page.getViewport({ scale: 1.5 * sf }) }).promise;
+
+        pCtx.lineWidth = 3; pCtx.lineCap = 'round'; pCtx.lineJoin = 'round';
+        const strokes = allPagesAnnotations[pNum] || allPagesAnnotations[String(pNum)] || [];
+        strokes.forEach(pt => {
+          pCtx.strokeStyle = pt.color || '#D9383A';
+          if (pt.type === 'start') { pCtx.beginPath(); pCtx.moveTo(pt.x, pt.y); }
+          else if (pt.type === 'move') { pCtx.lineTo(pt.x, pt.y); pCtx.stroke(); }
+        });
+
+        const adminStrokes = adminAllPagesOverlay[pNum] || adminAllPagesOverlay[String(pNum)] || [];
+        adminStrokes.forEach(pt => {
+          pCtx.strokeStyle = pt.color || '#F59E0B';
+          if (pt.type === 'start') { pCtx.beginPath(); pCtx.moveTo(pt.x, pt.y); }
+          else if (pt.type === 'move') { pCtx.lineTo(pt.x, pt.y); pCtx.stroke(); }
+        });
+
+        const commentText = (adminSemakMod ? (adminAllPagesComments[pNum] || '') : (allPagesComments[pNum] || '')).trim();
+        const commentBox = document.createElement('div');
+        commentBox.className = 'print-page-comment-box';
+        commentBox.innerHTML = `
+          <div class="comment-label">📝 Catatan Semakan — Muka Surat ${pNum}</div>
+          <div class="comment-text">${commentText || '(Tiada catatan untuk halaman ini)'}</div>`;
+        pageBlock.appendChild(commentBox);
+
+        printContainer.appendChild(pageBlock);
+      }
+
+      const footer = document.getElementById('printFooterSummary').cloneNode(true);
+      footer.className = 'print-report-footer';
+      footer.style.display = 'block';
+      footer.querySelector('#pStudent').innerText = pelajarSemasa.angkaGiliran;
+      footer.querySelector('#pFasa').innerText    = pelajarSemasa.fasaModerasi;
+      footer.querySelector('#pLecturer').innerText = emelPensyarahAktif;
+      footer.querySelector('#pScore').innerText   = document.getElementById('markahG').value || '0';
+      printContainer.appendChild(footer);
+
+      printContainer.style.display = 'block';
+      await new Promise(r => setTimeout(r, 800));
+      window.print();
+      printContainer.style.display = 'none';
+      printContainer.innerHTML = '';
+    }
+
+    // ---- ADMIN DASHBOARD TABS ----
+    function tukarTabAdmin(tab) {
+      ['upload','rumusan','semak','auto'].forEach(t => {
+        document.getElementById(`adminTab${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.add('hidden');
+        document.getElementById(`tabAdmin${t.charAt(0).toUpperCase()+t.slice(1)}`).className =
+          "admin-tab flex-1 py-2 text-xs font-semibold rounded-lg text-amber-800 hover:bg-amber-200/50 transition-all";
+      });
+      document.getElementById(`adminTab${tab.charAt(0).toUpperCase()+tab.slice(1)}`).classList.remove('hidden');
+      document.getElementById(`tabAdmin${tab.charAt(0).toUpperCase()+tab.slice(1)}`).className =
+        "admin-tab flex-1 py-2 text-xs font-bold rounded-lg bg-amber-700 text-white shadow-sm transition-all";
+      if (tab === 'rumusan') paparRumusanSemakan();
+      if (tab === 'semak')   binaSenaraiPilihPensyarahAdmin();
+      if (tab === 'auto')    binaSenaraiSkripAutoSemak();
+    }
+
+    // ============================================================
+    // ADMIN: RUMUSAN & LAPORAN MODERASI (Tugasan 3)
+    // ============================================================
+    function tukarModeRumusan(mode) { modeRumusanSemasa = mode; paparRumusanSemakan(); }
+
+    function paparRumusanSemakan() {
+      if (modeRumusanSemasa === 'p1') { paparRumusanDetailFasa('P1:', '🎯 Laporan Moderasi — Sampel Rawak (Fasa 1 / P1)'); }
+      else if (modeRumusanSemasa === 'p2') { paparRumusanDetailFasa('P2:', '📚 Laporan Moderasi — 9 Sampel (Fasa 2 / P2)'); }
+      else { paparRumusanKeseluruhan(); }
+    }
+
+    function paparRumusanKeseluruhan() {
+      document.getElementById('rumusanTableHead').innerHTML = `
+        <tr class="bg-[#1E2229] text-white">
+          <th class="px-3 py-2.5 text-left font-bold">Bil</th>
+          <th class="px-3 py-2.5 text-left font-bold">Nama Pensyarah</th>
+          <th class="px-3 py-2.5 text-left font-bold">Emel</th>
+          <th class="px-3 py-2.5 text-center font-bold">Selesai</th>
+          <th class="px-3 py-2.5 text-center font-bold">Belum Semak</th>
+          <th class="px-3 py-2.5 text-center font-bold">Status</th>
+        </tr>`;
+      document.getElementById('rumusanCatatanKaki').innerText =
+        "* Jumlah skrip dikira berdasarkan senarai dalam helaian Skrip_Pelajar (semua fasa).";
+
+      const total = globalSkripInduk.length;
+      const tbody = document.getElementById('rumusanJadualBody');
+      const ringkasan = document.getElementById('rumusanRingkasan');
+      tbody.innerHTML = '';
+
+      const unikLec = [];
+      const seen = new Set();
+      globalNamaLecturers.forEach(l => { if (!seen.has(l.email)) { seen.add(l.email); unikLec.push(l); } });
+
+      let bilanganSelesaiSemua = 0, bilanganSebahagian = 0, bilanganBelumMula = 0;
+
+      unikLec.forEach((lec, idx) => {
+        const selesai = globalHasilSemakan.filter(h => h.emelPensyarah === lec.email).length;
+        const belum   = total - selesai;
+        const peratus = total > 0 ? Math.round((selesai / total) * 100) : 0;
+
+        if (selesai === total && total > 0) bilanganSelesaiSemua++;
+        else if (selesai === 0)             bilanganBelumMula++;
+        else                                bilanganSebahagian++;
+
+        const statusKelas = selesai === total && total > 0 ? 'bg-green-100 text-green-800'
+                           : selesai === 0 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800';
+        const statusTeks = selesai === total && total > 0 ? '✅ Selesai'
+                          : selesai === 0 ? '⏳ Belum Mulakan' : `🔄 Sedang (${peratus}%)`;
+        const barWarna = peratus === 100 ? 'bg-green-500' : peratus === 0 ? 'bg-red-300' : 'bg-amber-400';
+
+        const tr = document.createElement('tr');
+        tr.className = (idx % 2 === 0 ? 'bg-white' : 'bg-neutral-50') + ' hover:bg-amber-50/40 transition-colors';
+        tr.innerHTML = `
+          <td class="px-3 py-2.5 font-mono text-gray-500">${idx + 1}</td>
+          <td class="px-3 py-2.5 font-bold text-[#1E2229]">${lec.nama}</td>
+          <td class="px-3 py-2.5 text-gray-500 font-mono text-[10px]">${lec.email}</td>
+          <td class="px-3 py-2.5 text-center">
+            <span class="font-bold text-green-700">${selesai}</span>
+            <div class="w-full bg-neutral-200 rounded-full h-1.5 mt-1"><div class="${barWarna} h-1.5 rounded-full" style="width:${peratus}%"></div></div>
+          </td>
+          <td class="px-3 py-2.5 text-center font-bold ${belum > 0 ? 'text-red-500' : 'text-green-600'}">${belum}</td>
+          <td class="px-3 py-2.5 text-center"><span class="inline-block text-[9px] font-bold px-2 py-1 rounded-full ${statusKelas}">${statusTeks}</span></td>`;
+        tbody.appendChild(tr);
+      });
+
+      const kartu = (warna, ikon, label, nilai) =>
+        `<div class="rounded-xl border p-3 ${warna}"><p class="text-lg font-bold font-mono">${ikon} ${nilai}</p><p class="text-[10px] font-semibold mt-0.5">${label}</p></div>`;
+      ringkasan.innerHTML =
+        kartu('bg-blue-50 border-blue-200 text-blue-800',  '👥', 'Jumlah Pensyarah', unikLec.length) +
+        kartu('bg-green-50 border-green-200 text-green-800','✅', 'Selesai Semua', bilanganSelesaiSemua) +
+        kartu('bg-amber-50 border-amber-200 text-amber-800','🔄', 'Sedang Semak', bilanganSebahagian) +
+        kartu('bg-red-50 border-red-200 text-red-700',     '⏳', 'Belum Mulakan', bilanganBelumMula);
+    }
+
+    function paparRumusanDetailFasa(prefix, tajukPaparan) {
+      document.getElementById('rumusanTableHead').innerHTML = `
+        <tr class="bg-[#1E2229] text-white">
+          <th class="px-3 py-2.5 text-left font-bold">Bil</th>
+          <th class="px-3 py-2.5 text-left font-bold">Angka Giliran</th>
+          <th class="px-3 py-2.5 text-left font-bold">Fasa / Aras</th>
+          <th class="px-3 py-2.5 text-left font-bold">Nama Pensyarah</th>
+          <th class="px-3 py-2.5 text-center font-bold">Markah Asal (a)</th>
+          <th class="px-3 py-2.5 text-center font-bold">Moderasi (b)</th>
+          <th class="px-3 py-2.5 text-center font-bold">Beza (c)</th>
+          <th class="px-3 py-2.5 text-center font-bold">Markah Akhir (g)</th>
+        </tr>`;
+      document.getElementById('rumusanCatatanKaki').innerText =
+        "* Baris bertanda merah menunjukkan Beza (c) ≥ 5 markah — mencetuskan klausa Pusingan 2.";
+
+      const tbody = document.getElementById('rumusanJadualBody');
+      const ringkasan = document.getElementById('rumusanRingkasan');
+      tbody.innerHTML = '';
+
+      const skripFasa = globalSkripInduk.filter(p => p.fasaModerasi.startsWith(prefix));
+      let bil = 1, jumlahRekod = 0, jumlahBezaBesar = 0, jumlahBelumSemak = 0;
+
+      skripFasa.forEach(skrip => {
+        const rekodSkrip = globalHasilSemakan.filter(h => h.angkaGiliran.toString().trim() === skrip.angkaGiliran.toString().trim());
+
+        if (rekodSkrip.length === 0) {
+          jumlahBelumSemak++;
+          const tr = document.createElement('tr');
+          tr.className = 'bg-neutral-50';
+          tr.innerHTML = `
+            <td class="px-3 py-2.5 font-mono text-gray-400">${bil++}</td>
+            <td class="px-3 py-2.5 font-bold font-mono text-[#1E2229]">${skrip.angkaGiliran}</td>
+            <td class="px-3 py-2.5 text-gray-400">${skrip.fasaModerasi}</td>
+            <td class="px-3 py-2.5 text-gray-400 italic" colspan="5">— Belum disemak oleh mana-mana pensyarah —</td>`;
+          tbody.appendChild(tr);
+          return;
+        }
+
+        rekodSkrip.forEach(rekod => {
+          jumlahRekod++;
+          const namaLec = (globalNamaLecturers.find(l => l.email === rekod.emelPensyarah) || {}).nama || rekod.emelPensyarah;
+          const beza = parseFloat(rekod.perbezaanP1);
+          const bezaSah = !isNaN(beza);
+          const bezaBesar = bezaSah && Math.abs(beza) >= 5;
+          if (bezaBesar) jumlahBezaBesar++;
+
+          const tr = document.createElement('tr');
+          tr.className = (bezaBesar ? 'bg-red-50' : (bil % 2 === 0 ? 'bg-white' : 'bg-neutral-50')) + ' hover:bg-amber-50/40 transition-colors';
+          tr.innerHTML = `
+            <td class="px-3 py-2.5 font-mono text-gray-500">${bil++}</td>
+            <td class="px-3 py-2.5 font-bold font-mono text-[#1E2229]">${skrip.angkaGiliran}</td>
+            <td class="px-3 py-2.5 text-gray-500 text-[10px]">${skrip.fasaModerasi}</td>
+            <td class="px-3 py-2.5 font-bold text-[#1E2229]">${namaLec}</td>
+            <td class="px-3 py-2.5 text-center font-mono">${rekod.markahPemeriksa ?? '-'}</td>
+            <td class="px-3 py-2.5 text-center font-mono font-bold">${rekod.markahModerasiP1 ?? '-'}</td>
+            <td class="px-3 py-2.5 text-center font-mono font-bold ${bezaBesar ? 'text-red-600' : 'text-gray-600'}">${bezaSah ? beza : '-'}${bezaBesar ? ' ⚠️' : ''}</td>
+            <td class="px-3 py-2.5 text-center font-mono font-bold">${rekod.markahAkhir ?? '-'}</td>`;
+          tbody.appendChild(tr);
+        });
+      });
+
+      const kartu = (warna, ikon, label, nilai) =>
+        `<div class="rounded-xl border p-3 ${warna}"><p class="text-lg font-bold font-mono">${ikon} ${nilai}</p><p class="text-[10px] font-semibold mt-0.5">${label}</p></div>`;
+      ringkasan.innerHTML =
+        kartu('bg-blue-50 border-blue-200 text-blue-800',  '📄', 'Jumlah Skrip Dalam Fasa Ini', skripFasa.length) +
+        kartu('bg-green-50 border-green-200 text-green-800','✅', 'Jumlah Rekod Semakan', jumlahRekod) +
+        kartu('bg-red-50 border-red-200 text-red-700',     '⚠️', 'Beza ≥5 (Perlu P2)', jumlahBezaBesar) +
+        kartu('bg-amber-50 border-amber-200 text-amber-800','⏳', 'Skrip Belum Disemak', jumlahBelumSemak);
+    }
+
+    function cetakLaporanRumusan() {
+      const tableAsal = document.getElementById('rumusanTable');
+      if (!tableAsal || document.getElementById('rumusanJadualBody').children.length === 0) {
+        tunjukNotifikasi("Tiada data untuk dicetak. Sila muat semula laporan dahulu.", "warning");
+        return;
+      }
+      const judul = modeRumusanSemasa === 'p1' ? 'Laporan Moderasi GKKO1062 — Sampel Rawak (Fasa 1 / P1)'
+                  : modeRumusanSemasa === 'p2' ? 'Laporan Moderasi GKKO1062 — 9 Sampel (Fasa 2 / P2)'
+                  : 'Laporan Ringkasan Status Semakan Pensyarah';
+
+      const printContainer = document.getElementById('bulkPrintContainer');
+      printContainer.innerHTML = '';
+      const tableClone = tableAsal.cloneNode(true);
+      tableClone.removeAttribute('id');
+      const wrapper = document.createElement('div');
+      wrapper.className = 'print-report-footer';
+      wrapper.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:12px; border-bottom:2px solid #1E2229; padding-bottom:8px;">
+          <div>
+            <p style="font-family:'Bricolage Grotesque',sans-serif; font-size:16px; font-weight:800; margin:0;">${judul}</p>
+            <p style="font-size:10px; color:#666; margin:4px 0 0;">IPG Kampus Darulaman — GKKO1062: Kokurikulum dan Kesihatan Diri</p>
+          </div>
+          <p style="font-size:9px; color:#999; margin:0;">Dijana: ${new Date().toLocaleString('ms-MY')}</p>
+        </div>`;
+      wrapper.appendChild(tableClone);
+      printContainer.appendChild(wrapper);
+      printContainer.style.display = 'block';
+      setTimeout(() => { window.print(); printContainer.style.display = 'none'; printContainer.innerHTML = ''; }, 300);
+    }
+
+    // ---- ADMIN: SEMAK CONTENGAN PENSYARAH ----
+    function binaSenaraiPilihPensyarahAdmin() {
+      const container = document.getElementById('senaraipilihPensyarahAdmin');
+      container.innerHTML = '';
+      const unikLec = [];
+      const seen = new Set();
+      globalNamaLecturers.forEach(l => { if (!seen.has(l.email)) { seen.add(l.email); unikLec.push(l); } });
+
+      unikLec.forEach(lec => {
+        const selesai = globalHasilSemakan.filter(h => h.emelPensyarah === lec.email).length;
+        const total   = globalSkripInduk.length;
+        const aktif   = adminEmelTonton === lec.email;
+        const div = document.createElement('div');
+        div.className = `flex justify-between items-center p-2 rounded-lg cursor-pointer border text-xs transition-all ${aktif ? 'bg-orange-100 border-orange-400 ring-2 ring-orange-400' : 'bg-neutral-50 border-neutral-200 hover:bg-amber-50 hover:border-amber-300'}`;
+        div.onclick = () => pilihPensyarahUntukSemak(lec.email, lec.nama);
+        div.innerHTML = `
+          <div><p class="font-bold text-[#1E2229] text-[11px]">${lec.nama}</p><p class="text-[9px] text-gray-400 font-mono">${lec.email}</p></div>
+          <span class="text-[10px] font-bold ${selesai === total && total > 0 ? 'text-green-600' : selesai === 0 ? 'text-red-400' : 'text-amber-600'}">${selesai}/${total}</span>`;
+        container.appendChild(div);
+      });
+    }
+
+    function pilihPensyarahUntukSemak(email, nama) {
+      adminEmelTonton = email;
+      document.getElementById('adminSemakPensyarahLabel').innerText = `Skrip untuk: ${nama}`;
+      binaSenaraiPilihPensyarahAdmin();
+      binaSenaraiPelajarAdmin(email);
+    }
+
+    function binaSenaraiPelajarAdmin(email) {
+      const container = document.getElementById('senaraiSkripAdminSemak');
+      container.innerHTML = '';
+      if (!email) { container.innerHTML = '<p class="text-[10px] text-gray-400 text-center p-4">Sila pilih pensyarah dahulu.</p>'; return; }
+
+      globalSkripInduk.forEach(p => {
+        const rekod = globalHasilSemakan.find(h => h.angkaGiliran.toString().trim() === p.angkaGiliran.toString().trim() && h.emelPensyarah === email);
+        const adaRekod = !!rekod;
+        let adaOverlay = false;
+        if (adaRekod && rekod.dataLakaran) {
+          try { const d = JSON.parse(rekod.dataLakaran); if (d.adminOverlay && Object.keys(d.adminOverlay).length > 0) adaOverlay = true; } catch(e) {}
+        }
+        const aktif = adminSkripTonton && adminSkripTonton.angkaGiliran.toString().trim() === p.angkaGiliran.toString().trim() && adminSemakMod;
+
+        const div = document.createElement('div');
+        div.className = `flex justify-between items-center p-2 rounded-lg cursor-pointer border text-xs transition-all ${aktif ? 'ring-2 ring-orange-400 bg-orange-50 border-orange-300' : adaRekod ? 'bg-white border-neutral-200 hover:bg-orange-50 hover:border-orange-300' : 'bg-neutral-50 border-neutral-100 opacity-60 cursor-not-allowed'}`;
+        div.onclick = () => { if (!adaRekod) return; adminSemakSkrip(p, rekod); };
+        div.innerHTML = `
+          <div><p class="font-bold font-mono text-[#1E2229]">${p.angkaGiliran}</p>
+          <span class="text-[9px] px-1 py-0.5 rounded ${p.fasaModerasi.startsWith('P1') ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}">${p.fasaModerasi}</span></div>
+          <div class="text-right"><p class="text-[10px] font-bold ${adaRekod ? 'text-green-600' : 'text-gray-300'}">${adaRekod ? '✓ Ada Semakan' : '— Tiada Rekod'}</p>
+          ${adaOverlay ? '<p class="text-[9px] text-orange-600 font-bold">🔍 Ada Anotasi Admin</p>' : ''}</div>`;
+        container.appendChild(div);
+      });
+    }
+
+    function adminSemakSkrip(skripInduk, rekodPensyarah) {
+      adminSkripTonton    = skripInduk;
+      adminSemakMod       = true;
+      allPagesAnnotations = {};
+      allPagesComments    = {};
+      adminAllPagesOverlay  = {};
+      adminAllPagesComments = {};
+      adminPageOverlayStrokes = [];
+      pageStrokes = [];
+
+      setRubricInputsDisabled(true);
+
+      document.getElementById('formAngkaGiliran').innerText = skripInduk.angkaGiliran;
+      document.getElementById('markahA').value = skripInduk.markahPemeriksa;
+      document.getElementById('markahB').value = rekodPensyarah?.markahModerasiP1 ?? '';
+      document.getElementById('markahC').value = rekodPensyarah?.perbezaanP1 ?? '';
+      document.getElementById('markahD').value = rekodPensyarah?.markahModerasiP2 ?? '';
+      document.getElementById('markahE').value = rekodPensyarah?.perbezaanP2 ?? '';
+      document.getElementById('markahF').value = rekodPensyarah?.markahPenyelarasan ?? '';
+      document.getElementById('markahG').value = rekodPensyarah?.markahAkhir ?? skripInduk.markahPemeriksa;
+
+      KEYS_T3.forEach(id => {
+        document.getElementById(`rubric${id}`).value = rekodPensyarah ? (rekodPensyarah[id.toLowerCase()] ?? '') : '';
+      });
+
+      if (rekodPensyarah) {
+        const jumlah = KEYS_T3.reduce((s,k) => s + (parseFloat(rekodPensyarah[k.toLowerCase()]) || 0), 0);
+        document.getElementById('rubricTotalDisplay').innerText = `${jumlah} / ${JUMLAH_MAX_T3}`;
+      } else {
+        document.getElementById('rubricTotalDisplay').innerText = `0 / ${JUMLAH_MAX_T3}`;
+      }
+
+      if (rekodPensyarah?.dataLakaran) {
+        try {
+          const parsed = JSON.parse(rekodPensyarah.dataLakaran);
+          if (parsed.annotations !== undefined) {
+            allPagesAnnotations  = parsed.annotations  || {};
+            allPagesComments     = parsed.comments     || {};
+            adminAllPagesOverlay = parsed.adminOverlay  || {};
+            adminAllPagesComments= parsed.adminComments || {};
+          } else { allPagesAnnotations = parsed; }
+        } catch(e) {}
+      }
+
+      document.getElementById('bannerEmelPensyarah').innerText  = adminEmelTonton;
+      document.getElementById('bannerAngkaGiliran').innerText   = skripInduk.angkaGiliran;
+      document.getElementById('adminSemakBanner').classList.remove('hidden');
+      document.getElementById('catatanContainer').classList.remove('hidden');
+      document.getElementById('catatanHalamanLabel').innerText = currentPdfPageNum;
+
+      currentPdfDoc = null;
+      canvas.classList.add('hidden');
+      document.getElementById('pdfNavigationControls').classList.add('hidden');
+      document.getElementById('canvasPlaceholder').classList.remove('hidden');
+      document.getElementById('canvasPlaceholder').innerHTML = `<p class="font-bold text-amber-700">Membuka skrip pelajar ${skripInduk.angkaGiliran}...</p>`;
+
+      currentPdfPageNum = 1;
+      binaSenaraiPelajarAdmin(adminEmelTonton);
+
+      fetch(urlAPI + "?action=fetchPdfProxy&id=" + skripInduk.urlSkrip)
+        .then(r => r.text())
+        .then(b64 => {
+          if (b64.startsWith("ERROR")) throw new Error(b64);
+          const raw = atob(b64);
+          const arr = new Uint8Array(raw.length);
+          for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+          pdfjsLib.getDocument({ data: arr }).promise.then(pdf => {
+            currentPdfDoc  = pdf;
+            totalPdfPages  = pdf.numPages;
+            document.getElementById('pdfTotalPagesNum').innerText = totalPdfPages;
+            document.getElementById('pdfNavigationControls').classList.remove('hidden');
+            renderHalamanAdminSemasa();
+          });
+        })
+        .catch(() => { document.getElementById('canvasPlaceholder').innerHTML = `<span class="text-red-500 font-bold">Gagal membuka fail PDF.</span>`; });
+    }
+
+    function renderHalamanAdminSemasa() {
+      if (!currentPdfDoc) return;
+      document.getElementById('pdfCurrentPageNum').innerText  = currentPdfPageNum;
+      document.getElementById('catatanHalamanLabel').innerText = currentPdfPageNum;
+      document.getElementById('catatanInput').value = adminAllPagesComments[currentPdfPageNum] || adminAllPagesComments[String(currentPdfPageNum)] || '';
+
+      currentPdfDoc.getPage(currentPdfPageNum).then(page => {
+        const vp = page.getViewport({ scale: 1.5 });
+        canvas.width = 800;
+        const sf = 800 / vp.width;
+        canvas.height = vp.height * sf;
+        page.render({ canvasContext: ctx, viewport: page.getViewport({ scale: 1.5 * sf }) }).promise.then(() => {
+          document.getElementById('canvasPlaceholder').classList.add('hidden');
+          canvas.classList.remove('hidden');
+          pageStrokes             = allPagesAnnotations[currentPdfPageNum] || allPagesAnnotations[String(currentPdfPageNum)] || [];
+          adminPageOverlayStrokes = adminAllPagesOverlay[currentPdfPageNum] || adminAllPagesOverlay[String(currentPdfPageNum)] || [];
+          lukisSemulaLakaranHalaman();
+          lukisSemulaOverlayAdmin();
+          setupCanvasEventListeners();
+        });
+      });
+    }
+
+    function lukisSemulaOverlayAdmin() {
+      const adminStrokes = adminAllPagesOverlay[currentPdfPageNum] || adminAllPagesOverlay[String(currentPdfPageNum)] || [];
+      adminStrokes.forEach(pt => {
+        ctx.strokeStyle = pt.color || '#F59E0B'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        if (pt.type === 'start') { ctx.beginPath(); ctx.moveTo(pt.x, pt.y); }
+        else if (pt.type === 'move') { ctx.lineTo(pt.x, pt.y); ctx.stroke(); }
+      });
+    }
+
+    function simpanAnotasiAdminKeSheets() {
+      if (!adminSkripTonton || !adminEmelTonton) return;
+
+      adminAllPagesOverlay[currentPdfPageNum]  = adminPageOverlayStrokes;
+      adminAllPagesComments[currentPdfPageNum] = document.getElementById('catatanInput').value;
+
+      const rekodAsal = globalHasilSemakan.find(h => h.angkaGiliran.toString().trim() === adminSkripTonton.angkaGiliran.toString().trim() && h.emelPensyarah === adminEmelTonton);
+      if (!rekodAsal) { tunjukNotifikasi("Tiada rekod semakan pensyarah untuk skrip ini.", "error"); return; }
+
+      let _gabungan = { annotations: {}, comments: {}, adminOverlay: {}, adminComments: {} };
+      if (rekodAsal.dataLakaran) {
+        try { const p = JSON.parse(rekodAsal.dataLakaran); if (p.annotations !== undefined) _gabungan = p; else _gabungan.annotations = p; } catch(e) {}
+      }
+      _gabungan.adminOverlay  = adminAllPagesOverlay;
+      _gabungan.adminComments = adminAllPagesComments;
+
+      const btn = document.getElementById('btnSimpanOverlayAdmin');
+      btn.innerText = "Sedang Menyimpan..."; btn.disabled = true;
+
+      const payloadOverlay = {
+        action:        "simpanAnotasiAdmin",
+        adminEmail:    emelPensyarahAktif,
+        adminPassword: _sesiPassword,
+        emelPensyarah: adminEmelTonton,
+        angkaGiliran:  adminSkripTonton.angkaGiliran,
+        dataLakaran:   JSON.stringify(_gabungan),
+        markahPenyelarasan: document.getElementById('markahF').value,
+        markahAkhir:        document.getElementById('markahG').value
+      };
+
+      fetchJSONSelamat(urlAPI, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payloadOverlay) }, 25000, 2)
+        .then(res => {
+          btn.innerText = "💾 Simpan Anotasi Admin & Penyelarasan"; btn.disabled = false;
+          if (res.status !== "success") { tunjukNotifikasi("Ralat: " + res.message, "error"); return; }
+          tunjukNotifikasi(`✅ Anotasi & markah akhir skrip ${adminSkripTonton.angkaGiliran} berjaya disimpan.`, "success");
+          sambungkanAPI();
+        })
+        .catch(async (err) => {
+          btn.innerText = "💾 Simpan Anotasi Admin & Penyelarasan"; btn.disabled = false;
+          const mesejSebenar = (err && err.message) ? err.message : String(err);
+          console.error("RALAT SEBENAR simpanAnotasiAdminKeSheets:", err);
+          const disahkan = await semakAnotasiAdminTelahDisimpan(payloadOverlay);
+          if (disahkan) {
+            tunjukNotifikasi("⚠️ Sambungan tidak stabil, tetapi anotasi admin telah selamat ditulis pada Sheets.", "warning");
+            sambungkanAPI();
+          } else {
+            alert("RALAT PENUH (debug) — Simpan Anotasi Admin:\n\n" + mesejSebenar);
+            tunjukNotifikasi("❌ RALAT SEBENAR: " + mesejSebenar, "error");
+          }
+        });
+    }
+
+    function keluarModSemakAdmin() {
+      adminSemakMod        = false;
+      adminEmelTonton      = '';
+      adminSkripTonton     = null;
+      adminAllPagesOverlay  = {};
+      adminPageOverlayStrokes = [];
+      adminAllPagesComments = {};
+      allPagesAnnotations  = {};
+      allPagesComments     = {};
+      pageStrokes          = [];
+      currentPdfDoc        = null;
+      currentPdfPageNum    = 1;
+
+      setRubricInputsDisabled(false);
+
+      canvas.classList.add('hidden');
+      document.getElementById('canvasPlaceholder').classList.remove('hidden');
+      document.getElementById('canvasPlaceholder').innerHTML = `
+        <svg class="mx-auto h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <p class="font-medium text-sm text-[#1E2229]">Sila Pilih Skrip Pelajar</p>
+        <p class="text-xs mt-1 text-gray-500">Klik nombor angka giliran pelajar pada papan kerja kanan.</p>`;
+      document.getElementById('pdfNavigationControls').classList.add('hidden');
+      document.getElementById('catatanContainer').classList.add('hidden');
+      document.getElementById('adminSemakBanner').classList.add('hidden');
+      document.getElementById('catatanInput').value = '';
+    }
+
+    // ============================================================
+    // ADMIN: SEMAKAN AUTOMATIK (Rubrik Tugasan 3)
+    // ============================================================
+    let modeSemakAuto = 'rule';
+    let autoSemakSkripDipilih = null;
+    let autoHasilRubrikTerkini = null;
+
+    const KATA_KUNCI_RUBRIK_T3 = {
+      t3_a1: { label: "Pengenalan: Persembahan Idea & Penilaian Isu", kunci: ["pengenalan","isu","definisi","latar belakang","fakta","contoh"], max: 5 },
+      t3_a2: { label: "Pengenalan: Penaakulan Kritis & Analitikal",   kunci: ["analisis","data","graf","carta","statistik","kajian menunjukkan"], max: 5 },
+      t3_b1: { label: "Kandungan: Huraian Isu",                       kunci: ["huraian","penjelasan","kesihatan","amalan tidak sihat","punca"], max: 5 },
+      t3_b2: { label: "Kandungan: Kesan Isu & Amalan",                kunci: ["kesan","impak","akibat","risiko kesihatan","masalah global","masalah dunia"], max: 10 },
+      t3_b3: { label: "Kandungan: Penyelesaian Masalah (Kaedah)",     kunci: ["penyelesaian","langkah","cadangan","kaedah","strategi","pengawalan"], max: 10 },
+      t3_c1: { label: "Kesimpulan: Hujahan",                          kunci: ["kesimpulannya","rumusan","hujah","justeru","oleh itu"], max: 5 },
+      t3_c2: { label: "Kesimpulan: Penyelesaian Masalah",             kunci: ["perspektif","cadangan akhir","langkah kawalan","tindakan susulan"], max: 5 },
+      t3_c3: { label: "Kesimpulan: Sumber",                           kunci: ["rujukan","sumber","laman web","kementerian kesihatan","who","statistik rasmi"], max: 5 }
+    };
+
+    function muatNaikRubrik() {
+      const input = document.getElementById('rubrikFileInput');
+      const status = document.getElementById('rubrikUploadStatus');
+      const btn = document.getElementById('btnMuatNaikRubrik');
+      const file = input.files[0];
+      if (!file) { status.innerText = '❌ Sila pilih fail PDF/TXT rubrik dahulu.'; status.className = 'text-[10px] text-red-500 font-bold mt-2'; return; }
+
+      btn.disabled = true; btn.innerText = 'Sedang Memproses...';
+      status.innerText = '⏳ Mengekstrak teks daripada fail rubrik...';
+      status.className = 'text-[10px] text-gray-400 mt-2';
+      ekstrakTeksDariFailLokal(file)
+        .then(teksRubrik => {
+          if (!teksRubrik || teksRubrik.trim().length < 20) { throw new Error('Tidak dapat mengekstrak teks.'); }
+          status.innerText = '⏳ Memuat naik rubrik ke server...';
+          return failKeBase64(file).then(fileBase64 => {
+            return fetch(urlAPI, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify({
+                action: 'uploadRubrik',
+                adminEmail: emelPensyarahAktif,
+                adminPassword: _sesiPassword,
+                namaFail: file.name,
+                mimeType: file.type || 'application/pdf',
+                teksRubrik: teksRubrik.length > 8000 ? teksRubrik.substring(0, 8000) : teksRubrik,
+                fileBase64
+              })
+            });
+          });
+        })
+        .then(r => r.json())
+        .then(json => {
+          if (json.status !== 'success') throw new Error(json.message || 'Ralat tidak diketahui.');
+          status.innerText = '✅ Rubrik Rasmi berjaya dimuat naik!';
+          status.className = 'text-[10px] text-green-600 font-bold mt-2';
+          input.value = '';
+          sambungkanAPI();
+        })
+        .catch(err => {
+          status.innerText = '❌ Ralat: ' + err.message;
+          status.className = 'text-[10px] text-red-500 font-bold mt-2';
+        })
+        .finally(() => { btn.disabled = false; btn.innerText = '⬆️ Muat Naik Rubrik'; });
+    }
+
+    function tukarModeSemakAuto(mod) {
+      modeSemakAuto = mod;
+      const aktif = "px-3 py-1.5 text-xs font-bold rounded-md bg-white border border-amber-300 text-amber-700 shadow-sm transition-all";
+      const tidakAktif = "px-3 py-1.5 text-xs font-semibold rounded-md text-gray-500 hover:bg-white/60 transition-all";
+      document.getElementById('btnModeRule').className = mod === 'rule' ? aktif : tidakAktif;
+      document.getElementById('btnModeAI').className   = mod === 'ai'   ? aktif : tidakAktif;
+      document.getElementById('autoAiNotis').classList.toggle('hidden', mod !== 'ai');
+      document.getElementById('modeAutoDesc').innerText = mod === 'ai'
+        ? "Kaedah AI (Groq GPT-OSS) — lebih tepat memahami konteks huraian isu & penyelesaian, tetapi guna kuota API."
+        : "Kaedah kata kunci/corak teks — pantas & percuma.";
+      document.getElementById('autoHasilContainer').classList.add('hidden');
+    }
+
+    async function ekstrakTeksDariFailLokal(file) {
+      if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) { return await file.text(); }
+      const arrayBuf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuf) }).promise;
+      let teksPenuh = '';
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        teksPenuh += `\n[MUKA SURAT ${p}]\n` + content.items.map(it => it.str).join(' ');
+      }
+      return teksPenuh;
+    }
+
+    function failKeBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function ekstrakTeksPdfUntukAnalisis(fileId) {
+      const res = await fetch(urlAPI + "?action=fetchPdfProxy&id=" + fileId);
+      const b64 = await res.text();
+      if (b64.startsWith("ERROR")) throw new Error(b64);
+      const raw = atob(b64);
+      const arr = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+      const pdf = await pdfjsLib.getDocument({ data: arr }).promise;
+      let teksPenuh = '';
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        const teksHalaman = content.items.map(it => it.str).join(' ');
+        teksPenuh += `\n[MUKA SURAT ${p}]\n` + teksHalaman;
+      }
+      return teksPenuh;
+    }
+
+    function binaSenaraiSkripAutoSemak() {
+      const container = document.getElementById('senaraiSkripAutoSemak');
+      container.innerHTML = '';
+      if (!globalSkripInduk || globalSkripInduk.length === 0) {
+        container.innerHTML = '<p class="text-[10px] text-gray-400 text-center p-4">Tiada skrip didaftarkan.</p>';
+        return;
+      }
+      globalSkripInduk.forEach(p => {
+        const adaFail = !!p.urlSkrip;
+        const aktif = autoSemakSkripDipilih && autoSemakSkripDipilih.angkaGiliran.toString().trim() === p.angkaGiliran.toString().trim();
+        const div = document.createElement('div');
+        div.className = `flex justify-between items-center p-2 rounded-lg border text-xs transition-all ${aktif ? 'ring-2 ring-amber-400 bg-amber-50 border-amber-300' : adaFail ? 'bg-white border-neutral-200 hover:bg-amber-50 hover:border-amber-300 cursor-pointer' : 'bg-neutral-50 border-neutral-100 opacity-50 cursor-not-allowed'}`;
+        if (adaFail) div.onclick = () => pilihSkripUntukAutoSemak(p);
+        div.innerHTML = `
+          <div><p class="font-bold font-mono text-[#1E2229]">${p.angkaGiliran}</p>
+          <span class="text-[9px] px-1 py-0.5 rounded ${p.fasaModerasi.startsWith('P1') ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}">${p.fasaModerasi}</span></div>
+          <p class="text-[10px] font-bold ${adaFail ? 'text-green-600' : 'text-gray-300'}">${adaFail ? '📄 Ada PDF' : '— Tiada PDF'}</p>`;
+        container.appendChild(div);
+      });
+    }
+
+    function pilihSkripUntukAutoSemak(p) {
+      autoSemakSkripDipilih = p;
+      document.getElementById('autoSemakSkripLabel').innerHTML = `Skrip dipilih: <span class="font-bold font-mono">${p.angkaGiliran}</span>`;
+      document.getElementById('btnJalankanAuto').disabled = false;
+      document.getElementById('autoHasilContainer').classList.add('hidden');
+      binaSenaraiSkripAutoSemak();
+    }
+
+    async function jalankanSemakanAutomatik() {
+      if (!autoSemakSkripDipilih) return;
+      const btn = document.getElementById('btnJalankanAuto');
+      const status = document.getElementById('autoSemakStatus');
+      btn.disabled = true;
+      status.innerText = "⏳ Mengekstrak teks daripada PDF...";
+      try {
+        const teks = await ekstrakTeksPdfUntukAnalisis(autoSemakSkripDipilih.urlSkrip);
+
+        if (modeSemakAuto === 'rule') {
+          status.innerText = "⏳ Menganalisis kandungan & format penulisan (rule-based)...";
+          const hasilRubrik = analisisRubrikT3(teks);
+          const hasilSumber = analisisSumber(teks);
+          autoHasilRubrikTerkini = hasilRubrik;
+          paparHasilAnalisis(hasilRubrik, hasilSumber, buatUlasanAutoRule(hasilRubrik, hasilSumber));
+          status.innerText = "✅ Semakan rule-based selesai.";
+        } else {
+          status.innerText = "⏳ Menghantar ke AI (Groq GPT-OSS)... Sila tunggu sebentar.";
+          const teksDipangkas = teks.length > 12000 ? teks.substring(0, 12000) + "\n...(dipangkas)" : teks;
+          const json = await fetchJSONSelamat(urlAPI, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({
+              action: "analisisAI",
+              adminEmail: emelPensyarahAktif,
+              adminPassword: _sesiPassword,
+              teksSkrip: teksDipangkas
+            })
+          }, 60000, 2);
+          if (json.status !== "success") { throw new Error(json.message || "Ralat AI tidak diketahui."); }
+          const { hasilRubrik, hasilApa, senaraiKesalahan, ulasan } = normalisasiHasilAIT3(json.hasil);
+          autoHasilRubrikTerkini = hasilRubrik;
+          paparHasilAnalisis(hasilRubrik, hasilApa, ulasan, senaraiKesalahan);
+          status.innerText = "✅ Semakan AI selesai.";
+        }
+      } catch (err) {
+        status.innerText = "❌ Ralat: " + err.message;
+        console.error(err);
+      }
+      btn.disabled = false;
+    }
+
+    function analisisRubrikT3(teks) {
+      const teksKecil = teks.toLowerCase();
+      const hasil = {};
+      Object.keys(KATA_KUNCI_RUBRIK_T3).forEach(kod => {
+        const item = KATA_KUNCI_RUBRIK_T3[kod];
+        const dijumpai = item.kunci.filter(k => teksKecil.includes(k.toLowerCase()));
+        let markah = 0, status = 'fail';
+        const peratusPadanan = dijumpai.length / item.kunci.length;
+        if (dijumpai.length > 0) {
+          const markahKira = peratusPadanan * item.max;
+          markah = Number(Math.min(item.max, Math.max(item.max * 0.1, Math.ceil(markahKira * 2) / 2)).toFixed(1));
+          status = markah >= (item.max * 0.7) ? 'pass' : markah >= (item.max * 0.4) ? 'warn' : 'fail';
+        }
+        const catatan = dijumpai.length > 0 ? `Kata kunci dikesan: ${dijumpai.join(', ')}` : 'Tiada struktur kata kunci dikesan dalam dokumen.';
+        hasil[kod] = { label: item.label, markah, status, catatan };
+      });
+      return hasil;
+    }
+
+    function analisisSumber(teks) {
+      const hasil = [];
+      const adaRujukan = /(?:^|\n)\s*(RUJUKAN|REFERENCES|BIBLIOGRAFI|SUMBER)\s*(?:\n|$)/i.test(teks);
+      hasil.push({ label: "Bahagian Rujukan/Sumber Wujud", status: adaRujukan ? 'pass' : 'fail',
+        detail: adaRujukan ? "Bahagian rujukan/sumber dikesan dalam dokumen." : "Tiada bahagian 'RUJUKAN' atau 'SUMBER' dikesan." });
+
+      const corakPetikan = /\(([A-Z][a-zA-Z.\-]+(?:\s(?:&|dan|and)\s[A-Z][a-zA-Z.\-]+)?,?\s(19|20)\d{2}[a-z]?)\)|([A-Z][a-zA-Z.\-]+\s\((19|20)\d{2}\))/g;
+      const jumlahPetikan = (teks.match(corakPetikan) || []).length;
+      hasil.push({ label: "Petikan Dalam Teks", status: jumlahPetikan === 0 ? 'fail' : jumlahPetikan < 3 ? 'warn' : 'pass',
+        detail: `${jumlahPetikan} corak petikan (Nama, Tahun) dikesan.` });
+
+      const rujukanRasmi = /(kementerian kesihatan|who|world health organization|nhms|jabatan kesihatan)/i.test(teks);
+      hasil.push({ label: "Kredibiliti Sumber", status: rujukanRasmi ? 'pass' : 'warn',
+        detail: rujukanRasmi ? "Sumber rasmi/berautoriti dikesan (cth: KKM/WHO)." : "Tiada sumber rasmi berautoriti dikesan secara jelas." });
+
+      return hasil;
+    }
+
+    function buatUlasanAutoRule(hasilRubrik, hasilSumber) {
+      let ulasan = `ULASAN SEMAKAN AUTOMATIK (RULE-BASED) — Skrip ${autoSemakSkripDipilih.angkaGiliran}\n\n`;
+      const jumlah = Object.values(hasilRubrik).reduce((s, i) => s + i.markah, 0);
+      ulasan += `Cadangan Jumlah Markah Awal: ${jumlah.toFixed(1)} / ${JUMLAH_MAX_T3}\n\n`;
+      ulasan += `Kepatuhan Rubrik (Tugasan 3):\n`;
+      Object.values(hasilRubrik).forEach(i => { ulasan += `- ${i.label}: ${i.markah}M (${i.status === 'pass' ? 'Memuaskan' : 'Perlu Baiki'})\n`; });
+      ulasan += `\nSumber & Rujukan:\n`;
+      hasilSumber.forEach(h => { ulasan += `- ${h.label}: ${h.detail}\n`; });
+      return ulasan;
+    }
+
+    function normalisasiHasilAIT3(teksJSON) {
+      let bersih = teksJSON.trim().replace(/^```json\s*/i, '').replace(/^```\s*/,'').replace(/```\s*$/,'');
+      let obj;
+      try { obj = JSON.parse(bersih); } catch(e) { throw new Error("Format JSON tidak sah."); }
+
+      const hasilRubrik = {};
+      Object.keys(KATA_KUNCI_RUBRIK_T3).forEach(kod => {
+        const item = KATA_KUNCI_RUBRIK_T3[kod];
+        const r = obj.rubrik && obj.rubrik[kod] ? obj.rubrik[kod] : { markah: 0, ulasan: "Tiada ulasan AI." };
+        const markah = Math.max(0, Math.min(item.max, parseFloat(r.markah) || 0));
+        hasilRubrik[kod] = { label: item.label, markah, status: markah >= (item.max * 0.8) ? 'pass' : markah >= (item.max * 0.5) ? 'warn' : 'fail', catatan: r.ulasan || '' };
+      });
+
+      const hasilApa = [];
+      if (obj.apa7) {
+        const statusMap = { baik: 'pass', sederhana: 'warn', lemah: 'fail' };
+        hasilApa.push({ label: "Sumber & Rujukan Keseluruhan (AI)", status: statusMap[obj.apa7.status] || 'info', detail: obj.apa7.status || '-' });
+        (obj.apa7.isu || []).forEach(isu => hasilApa.push({ label: "Isu Sumber", status: 'warn', detail: isu }));
+      }
+
+      const senaraiKesalahan = (obj.senaraiKesalahan || []).map(k => ({
+        muka: k.muka || '-', kategori: k.kategori || 'Format', keterangan: k.keterangan || '',
+        tahap: k.tahap || 'sederhana', cadangan: k.cadangan || ''
+      }));
+
+      return { hasilRubrik, hasilApa, senaraiKesalahan, ulasan: obj.ulasanKeseluruhan || '' };
+    }
+
+    function paparHasilAnalisis(hasilRubrik, hasilApa, ulasanTeks, senaraiKesalahan) {
+      document.getElementById('autoHasilContainer').classList.remove('hidden');
+      document.getElementById('autoMarkahAsalInput').value = (autoSemakSkripDipilih && autoSemakSkripDipilih.markahPemeriksa) || '';
+
+      const rubrikContainer = document.getElementById('autoRubrikList');
+      rubrikContainer.innerHTML = '';
+      let _jumlahCadangan = 0;
+
+      Object.keys(hasilRubrik).forEach(kod => {
+        const item = hasilRubrik[kod];
+        const limit = KATA_KUNCI_RUBRIK_T3[kod].max;
+        _jumlahCadangan += item.markah;
+        const warna = item.status === 'pass' ? 'bg-green-50 border-green-200 text-green-800'
+                    : item.status === 'warn' ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : 'bg-red-50 border-red-200 text-red-800';
+        const ikon = item.status === 'pass' ? '✅' : item.status === 'warn' ? '⚠️' : '❌';
+        const div = document.createElement('div');
+        div.className = `border rounded-lg p-2.5 ${warna}`;
+        div.innerHTML = `
+          <div class="flex justify-between items-start gap-2">
+            <p class="font-bold text-[11px]">${ikon} ${item.label}</p>
+            <span class="font-mono font-bold text-xs whitespace-nowrap">${item.markah} / ${limit}</span>
+          </div>
+          <p class="text-[10px] mt-1 opacity-80">${item.catatan || ''}</p>`;
+        rubrikContainer.appendChild(div);
+      });
+
+      document.getElementById('autoJumlahCadangan').innerText = `${_jumlahCadangan.toFixed(1)} / ${JUMLAH_MAX_T3}`;
+
+      const apaContainer = document.getElementById('autoApaList');
+      apaContainer.innerHTML = '';
+      hasilApa.forEach(item => {
+        const warna = item.status === 'pass' ? 'bg-green-50 border-green-200 text-green-800'
+                    : item.status === 'warn' ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : 'bg-red-50 border-red-200 text-red-800';
+        const div = document.createElement('div');
+        div.className = `border rounded-lg p-2.5 ${warna}`;
+        div.innerHTML = `<p class="font-bold text-[11px]">${item.label}</p><p class="text-[10px] mt-1 opacity-80">${item.detail}</p>`;
+        apaContainer.appendChild(div);
+      });
+
+      const kesalahanWrapper = document.getElementById('autoKesalahanWrapper');
+      const kesalahanContainer = document.getElementById('autoKesalahanList');
+      kesalahanContainer.innerHTML = '';
+      if (senaraiKesalahan && senaraiKesalahan.length > 0) {
+        kesalahanWrapper.classList.remove('hidden');
+        senaraiKesalahan.forEach(k => {
+          const div = document.createElement('div');
+          div.className = "border rounded-lg p-2.5 bg-neutral-50 text-neutral-800";
+          div.innerHTML = `
+            <p class="font-bold text-[11px]">🛑 m/s ${k.muka} [${k.kategori}]:</p>
+            <p class="text-[10px] mt-0.5">${k.keterangan}</p>
+            <p class="text-[10px] mt-1 font-bold text-green-700">💡 Cadangan: ${k.cadangan}</p>`;
+          kesalahanContainer.appendChild(div);
+        });
+      } else { kesalahanWrapper.classList.add('hidden'); }
+
+      document.getElementById('autoUlasanTeks').value = ulasanTeks;
+    }
+
+    function salinUlasanAuto() {
+      const el = document.getElementById('autoUlasanTeks');
+      el.select();
+      document.execCommand('copy');
+      tunjukNotifikasi("Ulasan AI disalin ke papan klip!", "success");
+    }
+
+    function gunakanCadanganMarkah() {
+      if (!autoHasilRubrikTerkini || !autoSemakSkripDipilih) return;
+      if (!pelajarSemasa || pelajarSemasa.angkaGiliran.toString().trim() !== autoSemakSkripDipilih.angkaGiliran.toString().trim()) {
+        tunjukNotifikasi("Sila pilih skrip pelajar tersebut di Papan Alur Kerja kanan dahulu.", "warning");
+        return;
+      }
+      Object.keys(autoHasilRubrikTerkini).forEach(kod => {
+        document.getElementById(`rubric${kod.toUpperCase()}`).value = autoHasilRubrikTerkini[kod].markah;
+      });
+      kiraSkorRubrik();
+      tunjukNotifikasi("✅ Cadangan markah dimasukkan ke borang rubrik.", "success");
+    }
+
+    async function simpanMarkahAsalDariAuto() {
+      if (!autoSemakSkripDipilih) return;
+      const nilai = document.getElementById('autoMarkahAsalInput').value;
+      const status = document.getElementById('autoMarkahAsalStatus');
+      if (nilai === '' || isNaN(parseFloat(nilai))) { status.innerText = '❌ Masukkan markah asal yang sah.'; return; }
+      status.innerText = '⏳ Menyimpan...';
+      try {
+        const res = await fetch(urlAPI, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: "kemaskiniMarkahAsal",
+            adminEmail: emelPensyarahAktif,
+            adminPassword: _sesiPassword,
+            angkaGiliran: autoSemakSkripDipilih.angkaGiliran,
+            markahAsalBaru: nilai
+          })
+        });
+        const json = await res.json();
+        if (json.status !== "success") { throw new Error(json.message); }
+        autoSemakSkripDipilih.markahPemeriksa = nilai;
+        status.innerText = `✅ Berjaya dikemaskini kepada ${nilai}.`;
+        sambungkanAPI();
+        binaSenaraiSkripAutoSemak();
+      } catch (err) { status.innerText = '❌ Ralat: ' + err.message; }
+    }
+
+    // ============================================================
+    // TUKAR KATA LALUAN
+    // ============================================================
+    function bukaModalTukarPass() {
+      if (!emelPensyarahAktif) return;
+      document.getElementById('tukarPassEmel').value = emelPensyarahAktif;
+      document.getElementById('modalTukarPassword').classList.remove('hidden');
+    }
+
+    function tutupModalTukarPass() { document.getElementById('modalTukarPassword').classList.add('hidden'); }
+
+    function togolLihat(inputId, btnId) {
+      const inp = document.getElementById(inputId);
+      const isHidden = inp.type === 'password';
+      inp.type = isHidden ? 'text' : 'password';
+      document.getElementById(btnId).innerText = isHidden ? '🙈' : '👁';
+    }
+
+    function semakKuatanPassword() {
+      const val = document.getElementById('tukarPassBaru').value;
+      const fill = document.getElementById('kuatanFill');
+      const label = document.getElementById('kuatanLabel');
+      let skor = 0;
+      if (val.length >= 6)  skor++;
+      if (val.length >= 10) skor++;
+      if (/[A-Z]/.test(val)) skor++;
+      if (/[0-9]/.test(val)) skor++;
+      if (/[^A-Za-z0-9]/.test(val)) skor++;
+
+      const map = [
+        { w:'0%', color:'bg-neutral-200', text:'' }, { w:'20%', color:'bg-red-400', text:'Terlalu Lemah' },
+        { w:'40%', color:'bg-orange-400', text:'Lemah' }, { w:'60%', color:'bg-yellow-400', text:'Sederhana' },
+        { w:'80%', color:'bg-blue-400', text:'Kuat' }, { w:'100%', color:'bg-green-500', text:'Sangat Kuat' }
+      ];
+      fill.className = `h-full rounded-full transition-all duration-300 ${map[skor].color}`;
+      fill.style.width = map[skor].w;
+      label.innerText = map[skor].text;
+      semakPadanan();
+    }
+
+    function semakPadanan() {
+      const baru = document.getElementById('tukarPassBaru').value;
+      const sahkan = document.getElementById('tukarPassSahkan').value;
+      const lbl = document.getElementById('padananLabel');
+      if (!sahkan) { lbl.innerText = ''; return; }
+      if (baru === sahkan) { lbl.innerText = '✓ Kata laluan sepadan'; lbl.className = 'text-[10px] mt-0.5 text-green-600 font-bold'; }
+      else { lbl.innerText = '✗ Kata laluan tidak sepadan'; lbl.className = 'text-[10px] mt-0.5 text-red-500 font-bold'; }
+    }
+
+    function hantarTukarPassword() {
+      const emel = document.getElementById('tukarPassEmel').value.trim();
+      const passLama = document.getElementById('tukarPassLama').value.trim();
+      const passBaru = document.getElementById('tukarPassBaru').value.trim();
+      const passSahkan = document.getElementById('tukarPassSahkan').value.trim();
+      const btn = document.getElementById('btnHantarTukar');
+
+      if (!passLama || !passBaru || !passSahkan) { tunjukNotifikasi("Semua medan wajib diisi.", "warning"); return; }
+      btn.innerText = "Sedang Menghantar..."; btn.disabled = true;
+
+      fetch(urlAPI, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "tukarPassword", email: emel, passwordLama: passLama, passwordBaru: passBaru, passwordSahkan: passSahkan })
+      })
+      .then(r => r.json())
+      .then(res => {
+        btn.innerText = "Kemaskini Kata Laluan"; btn.disabled = false;
+        if (res.status !== "success") { tunjukNotifikasi(res.message || "Ralat gagal dikemaskini.", "error"); return; }
+        _sesiPassword = passBaru;
+        tunjukNotifikasi("✓ Kata laluan berjaya dikemaskini!", "success");
+        tutupModalTukarPass();
+      })
+      .catch(() => { btn.innerText = "Kemaskini Kata Laluan"; btn.disabled = false; tunjukNotifikasi("Ralat sambungan.", "error"); });
+    }
+  </script>
+</body>
+</html>
