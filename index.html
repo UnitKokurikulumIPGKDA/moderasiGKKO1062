@@ -41,11 +41,13 @@
       .print-canvas-element { max-width: 190mm !important; height: auto !important; display: block; border: 1px solid #e2e8f0; }
       .print-page-comment-box { display: block !important; width: 100%; max-width: 190mm; border-top: 2px dashed #94a3b8; padding: 15px 0; font-size: 11px; margin-top: 10px; color: #0f172a; }
       .print-report-footer { page-break-before: always; break-before: page; display: block !important; padding: 20px; border: 2px solid #000; border-radius: 8px; }
+      .print-summary-paper { page-break-inside: avoid; width: 100%; max-width: 190mm; margin: 0 auto; padding: 10px; color: #000; }
     }
   </style>
 </head>
 <body class="min-h-screen flex text-sm antialiased selection:bg-teal-100 selection:text-teal-900">
 
+  <!-- ======================== LOGIN OVERLAY ======================== -->
   <div id="loginOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex justify-center items-center p-4 transition-opacity duration-300">
     <div class="bg-white max-w-sm w-full p-8 shadow-2xl border border-slate-200 flex flex-col gap-6 rounded-2xl">
       <div class="text-center border-b border-slate-100 pb-4">
@@ -68,6 +70,7 @@
     </div>
   </div>
 
+  <!-- ======================== MAIN APP LAYOUT ======================== -->
   <div id="appLayout" class="hidden w-full flex h-screen bg-slate-50">
     <aside class="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 h-full shadow-sm z-20">
       <div>
@@ -87,8 +90,9 @@
 
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
       
+      <!-- ================= WORKSPACE PANEL ================= -->
       <section id="panelWorkspace" class="hidden h-full flex flex-col lg:flex-row overflow-hidden">
-        <!-- Kiri: PDF & Ulasan dalam 1 Scroll -->
+        <!-- Kiri: PDF & Ulasan dalam 1 Scroll Area -->
         <div class="flex-1 flex flex-col bg-slate-100 border-r border-slate-200 h-full relative">
           
           <div class="h-14 bg-white border-b border-slate-200 flex justify-between items-center px-4 shrink-0 shadow-sm z-10">
@@ -100,7 +104,7 @@
             <button onclick="clearCanvasSesiIni()" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:text-red-600 px-2 py-1 rounded transition-colors border border-slate-200 bg-white">Padam Lakaran Anda</button>
           </div>
 
-          <!-- KONTENA SCROLL UTAMA -->
+          <!-- KONTENA SCROLL UTAMA (Kanvas PDF di atas, Kotak Ulasan di bawah) -->
           <div id="scrollAreaCanvas" class="flex-1 overflow-y-auto bg-[#EBE7DF] p-6 flex flex-col items-center">
             
             <div id="canvasPlaceholder" class="flex flex-col items-center text-center mt-20">
@@ -112,7 +116,7 @@
             <!-- KANVAS -->
             <canvas id="scriptCanvas" class="w-full max-w-[800px] h-auto block bg-white border border-slate-200 shadow-xl shrink-0 hidden mb-6"></canvas>
 
-            <!-- KOTAK ULASAN BERADA DI BAWAH KANVAS -->
+            <!-- KOTAK ULASAN (DI BAWAH KANVAS) -->
             <div id="commentSection" class="hidden w-full max-w-[800px] bg-white p-6 border border-slate-200 rounded-xl shadow-sm shrink-0 mb-10">
               <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
                 <h4 class="font-bold text-slate-800">📝 Ulasan Muka Surat <span id="labelUlasanMuka" class="text-teal-600 font-mono">1</span></h4>
@@ -139,7 +143,8 @@
           </div>
         </div>
 
-        <div class="w-full lg:w-[380px] shrink-0 bg-white h-full flex flex-col shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-20">
+        <!-- Kanan: Senarai Tugas & Rubrik Berperincian -->
+        <div class="w-full lg:w-[400px] shrink-0 bg-white h-full flex flex-col shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-20">
           <div class="flex-1 overflow-y-auto p-5 space-y-5">
             <div>
               <h3 class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Senarai Tugas</h3>
@@ -147,14 +152,17 @@
                 <button onclick="tukarFasaKerja('P1')" id="tabKerjaP1" class="flex-1 py-1.5 text-[10px] font-bold bg-white text-slate-900 rounded-md shadow-sm transition-all">P1 (1 Sampel)</button>
                 <button onclick="tukarFasaKerja('P2')" id="tabKerjaP2" class="flex-1 py-1.5 text-[10px] font-medium text-slate-500 rounded-md hover:text-slate-800 transition-all">P2 (Wakil Kelas)</button>
               </div>
-              <div id="senaraiTugasPelajar" class="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1"></div>
+              <div id="senaraiTugasPelajar" class="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-1"></div>
             </div>
 
             <hr class="border-slate-100">
 
             <div id="panelBorangMarkah" class="opacity-50 pointer-events-none transition-opacity duration-300">
               <div class="flex justify-between items-center mb-3">
-                <h3 class="font-display font-bold text-slate-900">Rubrik T3</h3>
+                <div>
+                  <h3 class="font-display font-bold text-slate-900">Rubrik T3 (50M)</h3>
+                  <p class="text-[10px] text-slate-400">Penulisan Reflektif Akademik</p>
+                </div>
                 <span id="labelTugasSemasa" class="text-[10px] font-bold bg-slate-100 px-2 py-1 border border-slate-200 rounded font-mono">Pilih Skrip</span>
               </div>
               <div class="space-y-3">
@@ -162,17 +170,103 @@
                   <label class="text-[10px] font-bold text-slate-600 uppercase">Markah Asal (a)</label>
                   <input type="text" id="borangMarkahA" disabled value="-" class="w-14 text-center text-xs font-bold font-mono bg-transparent border-0">
                 </div>
-                <div class="border border-slate-200 rounded-lg overflow-hidden">
-                  <div class="bg-slate-100 px-3 py-2 text-[9px] font-bold uppercase tracking-widest border-b border-slate-200">Pengisian Markah</div>
-                  <div class="p-3 space-y-2 bg-white">
-                    <div class="flex justify-between items-center"><span class="text-[11px] font-medium text-slate-700">A1 (/5)</span><input type="number" id="rubric_a1" min="0" max="5" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50"></div>
-                    <div class="flex justify-between items-center"><span class="text-[11px] font-medium text-slate-700">A2 (/5)</span><input type="number" id="rubric_a2" min="0" max="5" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50"></div>
-                    <div class="flex justify-between items-center"><span class="text-[11px] font-medium text-slate-700">B1 (/5)</span><input type="number" id="rubric_b1" min="0" max="5" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50"></div>
-                    <div class="flex justify-between items-center"><span class="text-[11px] font-medium text-slate-700">B2 (/10)</span><input type="number" id="rubric_b2" min="0" max="10" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50"></div>
-                    <div class="flex justify-between items-center"><span class="text-[11px] font-medium text-slate-700">B3 (/10)</span><input type="number" id="rubric_b3" min="0" max="10" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50"></div>
-                    <div class="flex justify-between items-center"><span class="text-[11px] font-medium text-slate-700">C1 (/5)</span><input type="number" id="rubric_c1" min="0" max="5" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50"></div>
-                    <div class="flex justify-between items-center"><span class="text-[11px] font-medium text-slate-700">C2 (/5)</span><input type="number" id="rubric_c2" min="0" max="5" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50"></div>
-                    <div class="flex justify-between items-center"><span class="text-[11px] font-medium text-slate-700">C3 (/5)</span><input type="number" id="rubric_c3" min="0" max="5" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50"></div>
+                
+                <!-- BORANG RUBRIK DENGAN DESKRIPSI LENGKAP -->
+                <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                  <div class="bg-slate-900 text-white px-3 py-2 text-[9px] font-bold uppercase tracking-widest flex justify-between items-center">
+                    <span>Perincian Rubrik Penilaian</span>
+                    <span class="text-teal-400 font-mono">Maks 50M</span>
+                  </div>
+                  <div class="p-3 space-y-3.5 divide-y divide-slate-100">
+                    
+                    <!-- Kriteria A1 -->
+                    <div class="pt-2 first:pt-0">
+                      <div class="flex justify-between items-start gap-2">
+                        <div class="pr-2">
+                          <p class="text-[11px] font-bold text-slate-800">A1. Persembahan Idea & Isu (/5)</p>
+                          <p class="text-[9.5px] text-slate-500 leading-snug mt-0.5">Pengenalan & pemahaman isu sangat jelas, fokus, objektif dan amat relevan dengan konteks kursus.</p>
+                        </div>
+                        <input type="number" id="rubric_a1" min="0" max="5" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50 shrink-0">
+                      </div>
+                    </div>
+
+                    <!-- Kriteria A2 -->
+                    <div class="pt-3">
+                      <div class="flex justify-between items-start gap-2">
+                        <div class="pr-2">
+                          <p class="text-[11px] font-bold text-slate-800">A2. Penaakulan Kritis (/5)</p>
+                          <p class="text-[9.5px] text-slate-500 leading-snug mt-0.5">Menganalisis isu secara mendalam, pemikiran reflektif, bersikap objektif dan ada penilaian kendiri bermakna.</p>
+                        </div>
+                        <input type="number" id="rubric_a2" min="0" max="5" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50 shrink-0">
+                      </div>
+                    </div>
+
+                    <!-- Kriteria B1 -->
+                    <div class="pt-3">
+                      <div class="flex justify-between items-start gap-2">
+                        <div class="pr-2">
+                          <p class="text-[11px] font-bold text-slate-800">B1. Huraian Isu & Pengalaman (/5)</p>
+                          <p class="text-[9.5px] text-slate-500 leading-snug mt-0.5">Huraian pengamatan/pengalaman praktikal sangat terperinci, bersistematik dan berasaskan situasi sebenar.</p>
+                        </div>
+                        <input type="number" id="rubric_b1" min="0" max="5" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50 shrink-0">
+                      </div>
+                    </div>
+
+                    <!-- Kriteria B2 -->
+                    <div class="pt-3">
+                      <div class="flex justify-between items-start gap-2">
+                        <div class="pr-2">
+                          <p class="text-[11px] font-bold text-slate-800">B2. Kesan Isu & Amalan Reflektif (/10)</p>
+                          <p class="text-[9.5px] text-slate-500 leading-snug mt-0.5">Membincangkan impak/kesan isu terhadap amalan profesional, individu dan organisasi secara komprehensif.</p>
+                        </div>
+                        <input type="number" id="rubric_b2" min="0" max="10" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50 shrink-0">
+                      </div>
+                    </div>
+
+                    <!-- Kriteria B3 -->
+                    <div class="pt-3">
+                      <div class="flex justify-between items-start gap-2">
+                        <div class="pr-2">
+                          <p class="text-[11px] font-bold text-slate-800">B3. Cadangan Penyelesaian Masalah (/10)</p>
+                          <p class="text-[9.5px] text-slate-500 leading-snug mt-0.5">Cadangan tindakan susulan & strategi penyelesaian masalah amat praktikal, bernas, inovatif dan berbukti.</p>
+                        </div>
+                        <input type="number" id="rubric_b3" min="0" max="10" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50 shrink-0">
+                      </div>
+                    </div>
+
+                    <!-- Kriteria C1 -->
+                    <div class="pt-3">
+                      <div class="flex justify-between items-start gap-2">
+                        <div class="pr-2">
+                          <p class="text-[11px] font-bold text-slate-800">C1. Hujahan & Sintesis Akademik (/5)</p>
+                          <p class="text-[9.5px] text-slate-500 leading-snug mt-0.5">Merangka hujah secara logik, bersistematik, matang serta menghubungkait teori dengan amalan lapangan.</p>
+                        </div>
+                        <input type="number" id="rubric_c1" min="0" max="5" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50 shrink-0">
+                      </div>
+                    </div>
+
+                    <!-- Kriteria C2 -->
+                    <div class="pt-3">
+                      <div class="flex justify-between items-start gap-2">
+                        <div class="pr-2">
+                          <p class="text-[11px] font-bold text-slate-800">C2. Kesimpulan & Refleksi Kendiri (/5)</p>
+                          <p class="text-[9.5px] text-slate-500 leading-snug mt-0.5">Kesimpulan berimpak tinggi, menyeluruh, merumuskan iktibar utama serta implikasi untuk masa depan.</p>
+                        </div>
+                        <input type="number" id="rubric_c2" min="0" max="5" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50 shrink-0">
+                      </div>
+                    </div>
+
+                    <!-- Kriteria C3 -->
+                    <div class="pt-3">
+                      <div class="flex justify-between items-start gap-2">
+                        <div class="pr-2">
+                          <p class="text-[11px] font-bold text-slate-800">C3. Sumber Rujukan & Format APA (/5)</p>
+                          <p class="text-[9.5px] text-slate-500 leading-snug mt-0.5">Penggunaan rujukan berkualiti, pelbagai, terkini serta mematuhi format perujukan gaya APA secara tepat.</p>
+                        </div>
+                        <input type="number" id="rubric_c3" min="0" max="5" step="0.5" oninput="kiraSkorAuto()" class="w-14 text-center text-xs font-bold border border-slate-200 rounded p-1 bg-slate-50 shrink-0">
+                      </div>
+                    </div>
+
                   </div>
                   <div class="bg-teal-50 px-3 py-2.5 flex justify-between items-center border-t border-teal-100"><span class="text-[9px] font-bold text-teal-800 uppercase tracking-widest">Jumlah Terkumpul</span><span id="jumlahMarkahRubrik" class="font-mono font-bold text-teal-700 text-sm">0 / 50</span></div>
                 </div>
@@ -187,7 +281,75 @@
         </div>
       </section>
 
-      <!-- PANAL MUAT NAIK P2 PENSYARAH (ID DIBETULKAN KEPADA panelLecUpload) -->
+      <!-- ================= PANEL RINGKASAN SEMAKAN PENSYARAH ================= -->
+      <section id="panelLecSummary" class="hidden h-full overflow-y-auto p-6 md:p-8">
+        <div class="max-w-6xl mx-auto space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-200 pb-4">
+            <div>
+              <span class="text-[10px] font-bold tracking-widest uppercase text-teal-600">Laporan Penilaian Peribadi</span>
+              <h2 class="text-2xl font-display font-bold text-slate-900 mt-0.5">Ringkasan Moderasi Pensyarah</h2>
+              <p class="text-xs text-slate-500 mt-1">Status dan rekod rasmi semakan Fasa 1 (P1) dan Fasa 2 (P2) bagi akaun ini.</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="tarikDataDariSheets()" class="text-xs font-bold bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl hover:bg-slate-50 shadow-sm transition-all flex items-center gap-1.5">
+                <span>🔄</span> Segar Semula
+              </button>
+              <button onclick="cetakRingkasanPensyarah()" class="text-xs font-bold bg-slate-900 hover:bg-black text-white px-5 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-1.5">
+                <span>🖨️</span> Cetak Laporan Ringkasan
+              </button>
+            </div>
+          </div>
+
+          <!-- KAD STATISTIK PENILAIAN PENSYARAH -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-teal-600">
+              <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Status Fasa 1 (P1)</p>
+              <p id="lecStatP1" class="text-xl font-display font-bold text-slate-900 mt-1">-</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-blue-600">
+              <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Status Fasa 2 (P2)</p>
+              <p id="lecStatP2" class="text-xl font-display font-bold text-slate-900 mt-1">-</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-600">
+              <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Jumlah Disemak</p>
+              <p id="lecStatTotal" class="text-xl font-display font-bold text-emerald-600 mt-1">0 Skrip</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-violet-600">
+              <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Purata Beza Markah</p>
+              <p id="lecStatBeza" class="text-xl font-display font-bold text-violet-600 mt-1">0.0 M</p>
+            </div>
+          </div>
+
+          <!-- JADUAL PERINCIAN REKOD PENILAIAN -->
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div class="p-5 border-b border-slate-100 bg-white">
+              <h3 class="font-display font-bold text-slate-900 text-sm">Senarai Keputusan Penilaian Moderasi</h3>
+              <p class="text-[10px] text-slate-400 mt-0.5">Ringkasan skor kriteria dan penyelarasan mengikut skrip pelajar.</p>
+            </div>
+            <div class="overflow-x-auto bg-slate-50/20">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-900 text-white text-[9px] uppercase tracking-widest">
+                  <tr>
+                    <th class="px-4 py-3 font-bold text-center w-12">Bil</th>
+                    <th class="px-4 py-3 font-bold">Angka Giliran</th>
+                    <th class="px-4 py-3 font-bold">Fasa / Aras</th>
+                    <th class="px-4 py-3 font-bold text-center">Markah Asal (a)</th>
+                    <th class="px-4 py-3 font-bold text-center">Moderasi (b/d)</th>
+                    <th class="px-4 py-3 font-bold text-center">Beza (c/e)</th>
+                    <th class="px-4 py-3 font-bold text-center">Markah Akhir (g)</th>
+                    <th class="px-4 py-3 font-bold text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="jadualLecSummaryBody" class="divide-y divide-slate-100 bg-white">
+                  <!-- Dijana automatik oleh JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PANEL MUAT NAIK P2 PENSYARAH ================= -->
       <section id="panelLecUpload" class="hidden h-full overflow-y-auto p-6 md:p-10">
         <div class="max-w-xl mx-auto">
           <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
@@ -206,12 +368,84 @@
         </div>
       </section>
 
+      <!-- ================= PANEL ADMIN DASHBOARD ================= -->
       <section id="panelAdminDashboard" class="hidden h-full overflow-y-auto p-6 md:p-8">
-        <div class="max-w-5xl mx-auto space-y-6">
-          <div class="flex justify-between items-end mb-4 border-b border-slate-200 pb-4">
-            <div><h2 class="text-2xl font-display font-bold text-slate-900">Pemantauan Moderasi</h2><p class="text-xs text-slate-500 mt-1">Papan Pemuka Penyelaras.</p></div>
-            <button onclick="tarikDataDariSheets()" class="text-[10px] font-bold bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-50 shadow-sm">🔄 Segar Semula</button>
+        <div class="max-w-6xl mx-auto space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-200 pb-4">
+            <div>
+              <h2 class="text-2xl font-display font-bold text-slate-900">Pemantauan Moderasi</h2>
+              <p class="text-xs text-slate-500 mt-1">Papan Pemuka Penyelaras Kursus.</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="tarikDataDariSheets()" class="text-[10px] font-bold bg-white border border-slate-200 text-slate-700 px-3.5 py-2 rounded-xl hover:bg-slate-50 shadow-sm transition-all">🔄 Segar Semula</button>
+              <button onclick="cetakLaporanRumusanAdmin()" class="text-[10px] font-bold bg-slate-900 hover:bg-black text-white px-4 py-2 rounded-xl shadow-md transition-all flex items-center gap-1.5">🖨️ Cetak Laporan Rumusan Admin</button>
+            </div>
           </div>
+
+          <!-- KAD STATISTIK KPI RUMUSAN SEMAKAN -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 border-l-4 border-l-blue-500 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Jumlah Pensyarah</p>
+                <p id="statTotalLec" class="text-2xl font-display font-bold text-slate-900 mt-1">0</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg">👥</div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 border-l-4 border-l-emerald-500 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Selesai Semua</p>
+                <p id="statSelesai" class="text-2xl font-display font-bold text-emerald-600 mt-1">0</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">✓</div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 border-l-4 border-l-amber-500 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Sedang Semak</p>
+                <p id="statSedang" class="text-2xl font-display font-bold text-amber-600 mt-1">0</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg">⏳</div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 border-l-4 border-l-red-500 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Belum Mulakan</p>
+                <p id="statBelum" class="text-2xl font-display font-bold text-red-600 mt-1">0</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-lg">⚠️</div>
+            </div>
+          </div>
+
+          <!-- JADUAL RUMUSAN STATUS SEMAKAN PENSYARAH -->
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white">
+              <div>
+                <h3 class="font-display font-bold text-slate-900 text-sm">Rumusan Status Semakan & Serahan Pensyarah</h3>
+                <p class="text-[10px] text-slate-400 mt-0.5">Pemantauan kemajuan muat naik P2 dan penandaan P1/P2 oleh setiap pensyarah kursus.</p>
+              </div>
+            </div>
+            <div class="overflow-x-auto bg-slate-50/30">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-900 text-white text-[9px] uppercase tracking-widest">
+                  <tr>
+                    <th class="px-4 py-3 font-bold text-center w-12">Bil</th>
+                    <th class="px-4 py-3 font-bold">Nama Pensyarah</th>
+                    <th class="px-4 py-3 font-bold">Emel Rasmi</th>
+                    <th class="px-4 py-3 font-bold text-center">Muat Naik P2</th>
+                    <th class="px-4 py-3 font-bold text-center">Semakan P1</th>
+                    <th class="px-4 py-3 font-bold text-center">Semakan P2</th>
+                    <th class="px-4 py-3 font-bold text-center">Status Keseluruhan</th>
+                  </tr>
+                </thead>
+                <tbody id="jadualRumusanBody" class="divide-y divide-slate-100 bg-white">
+                  <!-- Dijana automatik oleh JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- GRID PENDAFTARAN P1 & PEMANTAUAN P2 -->
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- P1 Upload -->
             <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-1">
@@ -242,6 +476,7 @@
     </main>
   </div>
 
+  <!-- KONTENA CETAKAN BULK -->
   <div id="bulkPrintContainer"></div>
   <div id="printFooterSummary" style="display:none">
     <div class="grid grid-cols-2 gap-6 p-5 text-xs">
@@ -253,7 +488,6 @@
   <div id="toastContainer" class="fixed bottom-6 right-6 z-[200] flex flex-col gap-3 pointer-events-none"></div>
 
   <script>
-    // URL Web App daripada Deployment Langkah 1
     let urlAPI = 'https://script.google.com/macros/s/AKfycbzUcGDoRpgw0nY7R2RtTasnSBbUsO47zkRoeRg0j4KT4twLALp8YdmWWheinb0ym5zd/exec'; 
     let dataSesi = { email: '', nama: '', peranan: '', password: '' };
     let dbPensyarah = [], dbSkripInduk = [], dbHasilSemakan = [];
@@ -264,9 +498,8 @@
     let ctx = canvas ? canvas.getContext('2d') : null;
     let isDrawing = false, warnaPen = '#EF4444', titikAkhir = null;
     
-    // PEMISAHAN DATA LAKARAN
-    let lakaranOrangLain = {}; // Lakaran yang ditarik dari pangkalan data (sejarah)
-    let lakaranSesiIni = {};   // Lakaran yang sedang dilukis oleh pensyarah aktif
+    let lakaranOrangLain = {};
+    let lakaranSesiIni = {};
     let ulasanSemuaHalaman = {}; 
 
     window.onload = () => {
@@ -315,7 +548,11 @@
         navContainer.innerHTML = '';
         const btnGaya = "nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-xs text-slate-600 font-medium hover:bg-slate-50 cursor-pointer w-full text-left";
         if (dataSesi.peranan === "Admin") navContainer.innerHTML += `<button onclick="tukarPandangan('adminDashboard')" class="${btnGaya} active" id="nav_adminDashboard">Dashboard Admin</button>`;
-        navContainer.innerHTML += `<button onclick="tukarPandangan('workspace')" class="${btnGaya} ${dataSesi.peranan !== 'Admin' ? 'active' : ''}" id="nav_workspace">Kanvas Semakan</button><button onclick="tukarPandangan('lecUpload')" class="${btnGaya}" id="nav_lecUpload">Muat Naik Skrip (P2)</button>`;
+        navContainer.innerHTML += `
+          <button onclick="tukarPandangan('workspace')" class="${btnGaya} ${dataSesi.peranan !== 'Admin' ? 'active' : ''}" id="nav_workspace">Kanvas Semakan</button>
+          <button onclick="tukarPandangan('lecSummary')" class="${btnGaya}" id="nav_lecSummary">Ringkasan Moderasi</button>
+          <button onclick="tukarPandangan('lecUpload')" class="${btnGaya}" id="nav_lecUpload">Muat Naik Skrip (P2)</button>
+        `;
       }
       tukarPandangan(dataSesi.peranan === "Admin" ? 'adminDashboard' : 'workspace'); tarikDataDariSheets();
     }
@@ -324,10 +561,11 @@
       const panelIds = {
         'adminDashboard': 'panelAdminDashboard',
         'workspace': 'panelWorkspace',
+        'lecSummary': 'panelLecSummary',
         'lecUpload': 'panelLecUpload'
       };
 
-      ['panelAdminDashboard', 'panelWorkspace', 'panelLecUpload', 'panelLecturerUpload'].forEach(p => { 
+      ['panelAdminDashboard', 'panelWorkspace', 'panelLecSummary', 'panelLecUpload'].forEach(p => { 
         const el = document.getElementById(p); 
         if(el) el.classList.add('hidden'); 
       });
@@ -340,12 +578,21 @@
       
       const activeNav = document.getElementById(`nav_${idPanel}`); 
       if(activeNav) activeNav.classList.add('active');
+
+      if (idPanel === 'lecSummary') {
+        binaPapanRingkasanPensyarah();
+      }
     }
 
     function tarikDataDariSheets() {
       fetch(urlAPI).then(r => r.json()).then(data => {
         dbPensyarah = data.pensyarah || []; dbSkripInduk = data.skripInduk || []; dbHasilSemakan = data.hasilSemakan || [];
-        if(dataSesi.peranan === "Admin") binaJadualPemantauanP2(); binaSenaraiKerjaPensyarah();
+        if(dataSesi.peranan === "Admin") {
+          binaJadualPemantauanP2();
+          binaJadualRumusanSemakan();
+        }
+        binaSenaraiKerjaPensyarah();
+        binaPapanRingkasanPensyarah();
       });
     }
 
@@ -373,6 +620,328 @@
         tab2.className = fasa === 'P2' ? "flex-1 py-1.5 text-[10px] font-bold bg-white text-slate-900 rounded-md shadow-sm transition-all" : "flex-1 py-1.5 text-[10px] font-medium text-slate-500 rounded-md hover:text-slate-800 transition-all";
       }
       binaSenaraiKerjaPensyarah(); 
+    }
+
+    function binaPapanRingkasanPensyarah() {
+      const tbody = document.getElementById('jadualLecSummaryBody');
+      const elP1 = document.getElementById('lecStatP1');
+      const elP2 = document.getElementById('lecStatP2');
+      const elTotal = document.getElementById('lecStatTotal');
+      const elBeza = document.getElementById('lecStatBeza');
+
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      if (!dataSesi.email) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400 text-xs">Sila log masuk untuk melihat rekod ringkasan.</td></tr>`;
+        return;
+      }
+
+      const userReviews = dbHasilSemakan.filter(h => h.emelPensyarah === dataSesi.email);
+      let countP1 = 0, countP2 = 0;
+      let sumBeza = 0, countBeza = 0;
+
+      if (dbSkripInduk.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400 text-xs">Tiada data skrip dikesan.</td></tr>`;
+        return;
+      }
+
+      dbSkripInduk.forEach((skrip, idx) => {
+        const myReview = userReviews.find(r => r.angkaGiliran.toString() === skrip.angkaGiliran.toString());
+        const isDisemak = !!myReview;
+
+        if (isDisemak) {
+          if (skrip.fasaModerasi.includes('P1')) countP1++;
+          if (skrip.fasaModerasi.includes('P2')) countP2++;
+        }
+
+        let markahAsal = parseFloat(skrip.markahPemeriksa);
+        let markahModerasi = isDisemak ? parseFloat(myReview.markahModerasiP1 || myReview.markahModerasiP2 || myReview.markahAkhir) : null;
+        let bezaVal = (isDisemak && !isNaN(markahAsal) && !isNaN(markahModerasi)) ? (markahModerasi - markahAsal) : null;
+
+        if (bezaVal !== null) {
+          sumBeza += Math.abs(bezaVal);
+          countBeza++;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition-colors';
+        tr.innerHTML = `
+          <td class="px-4 py-3 font-mono text-slate-400 text-center">${idx + 1}</td>
+          <td class="px-4 py-3 font-bold font-mono text-slate-900">${skrip.angkaGiliran}</td>
+          <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold border ${skrip.fasaModerasi.includes('P1') ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-teal-50 text-teal-700 border-teal-200'}">${skrip.fasaModerasi}</span></td>
+          <td class="px-4 py-3 text-center font-mono text-slate-600">${!isNaN(markahAsal) ? markahAsal : '-'}</td>
+          <td class="px-4 py-3 text-center font-mono font-bold text-slate-800">${(isDisemak && markahModerasi !== null) ? markahModerasi : '-'}</td>
+          <td class="px-4 py-3 text-center font-mono font-bold ${bezaVal !== null && Math.abs(bezaVal) >= 5 ? 'text-red-600' : 'text-slate-600'}">${bezaVal !== null ? (bezaVal > 0 ? '+' + bezaVal.toFixed(1) : bezaVal.toFixed(1)) : '-'}</td>
+          <td class="px-4 py-3 text-center font-mono font-bold text-teal-700">${(isDisemak && myReview.markahAkhir) ? myReview.markahAkhir : '-'}</td>
+          <td class="px-4 py-3 text-center">
+            ${isDisemak 
+              ? `<span class="px-2.5 py-1 rounded-md text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider">✓ Disemak</span>` 
+              : `<span class="px-2.5 py-1 rounded-md text-[9px] font-bold bg-slate-100 text-slate-400 border border-slate-200 uppercase tracking-wider">Menunggu</span>`}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (elP1) elP1.innerText = `${countP1} Disemak`;
+      if (elP2) elP2.innerText = `${countP2} Disemak`;
+      if (elTotal) elTotal.innerText = `${userReviews.length} Skrip`;
+      if (elBeza) elBeza.innerText = countBeza > 0 ? `${(sumBeza / countBeza).toFixed(1)} M` : '0.0 M';
+    }
+
+    function cetakRingkasanPensyarah() {
+      if (!dataSesi.email) {
+        tunjukToast("Sila log masuk terlebih dahulu.", "warning");
+        return;
+      }
+
+      const printContainer = document.getElementById('bulkPrintContainer');
+      if (!printContainer) return;
+      printContainer.innerHTML = '';
+
+      const userReviews = dbHasilSemakan.filter(h => h.emelPensyarah === dataSesi.email);
+      let rowsHtml = '';
+
+      dbSkripInduk.forEach((skrip, idx) => {
+        const myReview = userReviews.find(r => r.angkaGiliran.toString() === skrip.angkaGiliran.toString());
+        const isDisemak = !!myReview;
+
+        let markahAsal = parseFloat(skrip.markahPemeriksa);
+        let markahMod = isDisemak ? parseFloat(myReview.markahModerasiP1 || myReview.markahModerasiP2 || myReview.markahAkhir) : null;
+        let beza = (isDisemak && !isNaN(markahAsal) && !isNaN(markahMod)) ? (markahMod - markahAsal) : null;
+
+        rowsHtml += `
+          <tr style="border-bottom: 1px solid #e2e8f0; text-align: center;">
+            <td style="padding: 8px; font-family: monospace;">${idx + 1}</td>
+            <td style="padding: 8px; font-weight: bold; font-family: monospace;">${skrip.angkaGiliran}</td>
+            <td style="padding: 8px;">${skrip.fasaModerasi}</td>
+            <td style="padding: 8px; font-family: monospace;">${!isNaN(markahAsal) ? markahAsal : '-'}</td>
+            <td style="padding: 8px; font-family: monospace; font-weight: bold;">${isDisemak && markahMod !== null ? markahMod : '-'}</td>
+            <td style="padding: 8px; font-family: monospace; color: ${beza !== null && Math.abs(beza) >= 5 ? '#dc2626' : '#000'}">${beza !== null ? (beza > 0 ? '+' + beza.toFixed(1) : beza.toFixed(1)) : '-'}</td>
+            <td style="padding: 8px; font-family: monospace; font-weight: bold;">${isDisemak ? (myReview.markahAkhir || '-') : '-'}</td>
+            <td style="padding: 8px; font-weight: bold; font-size: 10px;">${isDisemak ? 'DISEMAK' : 'MENUNGGU'}</td>
+          </tr>
+        `;
+      });
+
+      const paper = document.createElement('div');
+      paper.className = 'print-summary-paper';
+      paper.innerHTML = `
+        <div style="border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #0d9488;">IPG Kampus Darulaman</span>
+            <h1 style="font-size: 20px; font-weight: 800; margin: 4px 0 0 0; font-family: 'Space Grotesk', sans-serif;">LAPORAN RINGKASAN PENILAIAN MODERASI</h1>
+            <p style="font-size: 11px; margin: 2px 0 0 0; color: #475569;">Kursus GKKO1062 — Kokurikulum dan Kesihatan Diri</p>
+          </div>
+          <div style="text-align: right; font-size: 10px; color: #64748b;">
+            <p style="margin:0;"><strong>Tarikh Cetakan:</strong> ${new Date().toLocaleDateString('ms-MY')}</p>
+            <p style="margin:2px 0 0 0;">Sistem Moderasi Digital IPG</p>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px; font-size: 11px; background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px;">
+          <p style="margin: 0 0 4px 0;"><strong>Nama Pensyarah Penilai:</strong> ${dataSesi.nama}</p>
+          <p style="margin: 0 0 4px 0;"><strong>Emel Rasmi:</strong> ${dataSesi.email}</p>
+          <p style="margin: 0;"><strong>Jumlah Skrip Disemak:</strong> ${userReviews.length} / ${dbSkripInduk.length}</p>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 24px;">
+          <thead>
+            <tr style="background-color: #0f172a; color: white; text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px;">
+              <th style="padding: 8px;">Bil</th>
+              <th style="padding: 8px;">Angka Giliran</th>
+              <th style="padding: 8px;">Fasa Moderasi</th>
+              <th style="padding: 8px;">Markah Asal (a)</th>
+              <th style="padding: 8px;">Moderasi (b/d)</th>
+              <th style="padding: 8px;">Beza (c/e)</th>
+              <th style="padding: 8px;">Markah Akhir (g)</th>
+              <th style="padding: 8px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml || '<tr><td colspan="8" style="padding: 12px; text-align: center;">Tiada rekod penilaian.</td></tr>'}
+          </tbody>
+        </table>
+
+        <div style="margin-top: 40px; border-top: 1px solid #cbd5e1; padding-top: 16px; font-size: 10px; display: flex; justify-content: space-between;">
+          <div>
+            <p style="margin:0;">Pengesahan Penilai:</p>
+            <div style="height: 45px;"></div>
+            <p style="margin:0; font-weight: bold; border-top: 1px solid #000; width: 180px; padding-top: 4px;">(${dataSesi.nama})</p>
+          </div>
+          <div style="text-align: right; color: #94a3b8; align-self: flex-end;">
+            <p style="margin:0;">Dokumen Rasmi Dijana Secara Digital</p>
+          </div>
+        </div>
+      `;
+
+      printContainer.appendChild(paper);
+      printContainer.style.display = 'block';
+
+      tunjukToast("Menjana dokumen cetakan...", "info");
+      setTimeout(() => {
+        window.print();
+        printContainer.style.display = 'none';
+        printContainer.innerHTML = '';
+      }, 500);
+    }
+
+    function binaJadualRumusanSemakan() {
+      const tbody = document.getElementById('jadualRumusanBody');
+      const statTotalLec = document.getElementById('statTotalLec');
+      const statSelesai = document.getElementById('statSelesai');
+      const statSedang = document.getElementById('statSedang');
+      const statBelum = document.getElementById('statBelum');
+      if(!tbody) return;
+
+      tbody.innerHTML = '';
+      const lecturers = dbPensyarah.filter(p => p.peranan !== 'Admin');
+      const totalSkrip = dbSkripInduk.length;
+
+      let countSelesai = 0, countSedang = 0, countBelum = 0;
+
+      lecturers.forEach((lec, idx) => {
+        // Semak status muat naik P2
+        const p2Script = dbSkripInduk.find(s => s.fasaModerasi.includes('P2') && s.emelPensyarah === lec.email);
+        const p2Uploaded = !!p2Script;
+
+        // Semak status semakan P1
+        const p1Script = dbSkripInduk.find(s => s.fasaModerasi.includes('P1'));
+        const p1Review = p1Script ? dbHasilSemakan.find(h => h.angkaGiliran.toString() === p1Script.angkaGiliran.toString() && h.emelPensyarah === lec.email) : null;
+        const p1Done = !!p1Review;
+
+        // Semak bilangan P2 yang telah disemak
+        const p2Reviews = dbHasilSemakan.filter(h => h.emelPensyarah === lec.email && h.fasaModerasi.includes('P2'));
+        const p2DoneCount = p2Reviews.length;
+
+        const totalCompletedByLec = dbHasilSemakan.filter(h => h.emelPensyarah === lec.email).length;
+
+        let statusText = 'Belum Mulakan';
+        let statusBadge = 'bg-red-50 text-red-600 border-red-200';
+
+        if (totalSkrip > 0 && totalCompletedByLec >= totalSkrip) {
+          statusText = 'Selesai Semua';
+          statusBadge = 'bg-emerald-50 text-emerald-600 border-emerald-200';
+          countSelesai++;
+        } else if (totalCompletedByLec > 0 || p2Uploaded) {
+          statusText = 'Sedang Semak';
+          statusBadge = 'bg-amber-50 text-amber-600 border-amber-200';
+          countSedang++;
+        } else {
+          countBelum++;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition-colors';
+        tr.innerHTML = `
+          <td class="px-4 py-3 font-mono text-slate-400 text-center">${idx + 1}</td>
+          <td class="px-4 py-3 font-bold text-slate-800">${lec.nama}</td>
+          <td class="px-4 py-3 font-mono text-slate-500 text-[10px]">${lec.email}</td>
+          <td class="px-4 py-3 text-center">${p2Uploaded ? `<span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-200">✓ Dimuat Naik</span>` : `<span class="bg-red-50 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold border border-red-200">⚠️ Belum</span>`}</td>
+          <td class="px-4 py-3 text-center">${p1Done ? `<span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-200">✓ Disemak</span>` : `<span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200">⏳ Belum</span>`}</td>
+          <td class="px-4 py-3 text-center font-mono font-bold text-slate-700">${p2DoneCount} Disemak</td>
+          <td class="px-4 py-3 text-center">
+            <span class="px-2.5 py-1 rounded-md text-[9px] font-bold border uppercase tracking-wider ${statusBadge}">${statusText}</span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (statTotalLec) statTotalLec.innerText = lecturers.length;
+      if (statSelesai) statSelesai.innerText = countSelesai;
+      if (statSedang) statSedang.innerText = countSedang;
+      if (statBelum) statBelum.innerText = countBelum;
+    }
+
+    function cetakLaporanRumusanAdmin() {
+      const printContainer = document.getElementById('bulkPrintContainer');
+      if (!printContainer) return;
+      printContainer.innerHTML = '';
+
+      const lecturers = dbPensyarah.filter(p => p.peranan !== 'Admin');
+      let rowsHtml = '';
+
+      lecturers.forEach((lec, idx) => {
+        const p2Script = dbSkripInduk.find(s => s.fasaModerasi.includes('P2') && s.emelPensyarah === lec.email);
+        const p2Uploaded = !!p2Script;
+
+        const p1Script = dbSkripInduk.find(s => s.fasaModerasi.includes('P1'));
+        const p1Review = p1Script ? dbHasilSemakan.find(h => h.angkaGiliran.toString() === p1Script.angkaGiliran.toString() && h.emelPensyarah === lec.email) : null;
+        const p1Done = !!p1Review;
+
+        const p2Reviews = dbHasilSemakan.filter(h => h.emelPensyarah === lec.email && h.fasaModerasi.includes('P2'));
+        const totalCompletedByLec = dbHasilSemakan.filter(h => h.emelPensyarah === lec.email).length;
+
+        let statusText = 'BELUM MULAKAN';
+        if (dbSkripInduk.length > 0 && totalCompletedByLec >= dbSkripInduk.length) statusText = 'SELESAI';
+        else if (totalCompletedByLec > 0 || p2Uploaded) statusText = 'SEDANG SEMAK';
+
+        rowsHtml += `
+          <tr style="border-bottom: 1px solid #e2e8f0; text-align: center;">
+            <td style="padding: 8px; font-family: monospace;">${idx + 1}</td>
+            <td style="padding: 8px; text-align: left; font-weight: bold;">${lec.nama}</td>
+            <td style="padding: 8px; font-family: monospace; font-size: 10px;">${lec.email}</td>
+            <td style="padding: 8px;">${p2Uploaded ? '✓ DIMUAT NAIK' : '⚠️ BELUM'}</td>
+            <td style="padding: 8px;">${p1Done ? '✓ DISEMAK' : '⏳ BELUM'}</td>
+            <td style="padding: 8px; font-family: monospace;">${p2Reviews.length} Skrip</td>
+            <td style="padding: 8px; font-weight: bold; font-size: 10px;">${statusText}</td>
+          </tr>
+        `;
+      });
+
+      const paper = document.createElement('div');
+      paper.className = 'print-summary-paper';
+      paper.innerHTML = `
+        <div style="border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #0d9488;">IPG Kampus Darulaman</span>
+            <h1 style="font-size: 20px; font-weight: 800; margin: 4px 0 0 0; font-family: 'Space Grotesk', sans-serif;">LAPORAN STATUS SEMAKAN & MODERASI PENSYARAH</h1>
+            <p style="font-size: 11px; margin: 2px 0 0 0; color: #475569;">Kursus GKKO1062 — Penyelarasan Peringkat Jabatan</p>
+          </div>
+          <div style="text-align: right; font-size: 10px; color: #64748b;">
+            <p style="margin:0;"><strong>Tarikh Dijana:</strong> ${new Date().toLocaleDateString('ms-MY')}</p>
+            <p style="margin:2px 0 0 0;">Papan Pemuka Pentadbir</p>
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 24px;">
+          <thead>
+            <tr style="background-color: #0f172a; color: white; text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px;">
+              <th style="padding: 8px;">Bil</th>
+              <th style="padding: 8px; text-align: left;">Nama Pensyarah</th>
+              <th style="padding: 8px;">Emel</th>
+              <th style="padding: 8px;">Muat Naik P2</th>
+              <th style="padding: 8px;">Semakan P1</th>
+              <th style="padding: 8px;">Semakan P2</th>
+              <th style="padding: 8px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml || '<tr><td colspan="7" style="padding: 12px; text-align: center;">Tiada rekod pensyarah.</td></tr>'}
+          </tbody>
+        </table>
+
+        <div style="margin-top: 40px; border-top: 1px solid #cbd5e1; padding-top: 16px; font-size: 10px; display: flex; justify-content: space-between;">
+          <div>
+            <p style="margin:0;">Pengesahan Penyelaras Kursus (Admin):</p>
+            <div style="height: 45px;"></div>
+            <p style="margin:0; font-weight: bold; border-top: 1px solid #000; width: 200px; padding-top: 4px;">(${dataSesi.nama})</p>
+          </div>
+          <div style="text-align: right; color: #94a3b8; align-self: flex-end;">
+            <p style="margin:0;">Dokumen Rasmi Pemantauan Moderasi Digital</p>
+          </div>
+        </div>
+      `;
+
+      printContainer.appendChild(paper);
+      printContainer.style.display = 'block';
+
+      tunjukToast("Menjana laporan admin...", "info");
+      setTimeout(() => {
+        window.print();
+        printContainer.style.display = 'none';
+        printContainer.innerHTML = '';
+      }, 500);
     }
 
     function binaJadualPemantauanP2() {
@@ -509,9 +1078,9 @@
     }
 
     function clearCanvasSesiIni() { 
-      if(confirm("Padam lakaran anda untuk muka surat ini? (Lakaran pemeriksa terdahulu tidak akan dipadam)")) { 
-        lakaranSesiIni[pageNum] = []; renderHalamanPdf(); 
-      } 
+      lakaranSesiIni[pageNum] = []; 
+      renderHalamanPdf(); 
+      tunjukToast("Lakaran anda untuk halaman ini telah dipadam.", "info");
     }
 
     function setupCanvasEvents() {
