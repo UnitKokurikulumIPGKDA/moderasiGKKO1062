@@ -281,11 +281,11 @@
               </div>
             </div>
 
-            <!-- PDF Container -->
-            <div id="canvasContainer" class="flex-1 glass-panel rounded-3xl overflow-auto flex flex-col justify-center items-center p-4 bg-slate-100 relative shadow-inner">
-              <canvas id="scriptCanvas" class="shadow-2xl bg-white hidden max-w-full rounded-lg"></canvas>
-              <div id="canvasPlaceholder" class="text-center text-slate-400 p-8 flex flex-col items-center">
-                <div class="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center mb-4">
+            <!-- PDF Container (Telah Dibaiki Susun Atur Skrol) -->
+            <div id="canvasContainer" class="flex-1 min-h-0 glass-panel rounded-3xl overflow-auto p-4 bg-slate-100 relative shadow-inner block text-center">
+              <canvas id="scriptCanvas" class="shadow-2xl bg-white hidden mx-auto max-w-full rounded-lg origin-top"></canvas>
+              <div id="canvasPlaceholder" class="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8">
+                <div class="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center mb-4 mx-auto">
                   <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 </div>
                 <h3 class="font-display font-semibold text-slate-600 text-lg">Pilih Skrip Untuk Disemak</h3>
@@ -693,13 +693,9 @@
       const lecturers = dbPensyarah.filter(p => p.peranan !== 'Admin');
 
       lecturers.forEach((lec, index) => {
-        // Cari skrip P2 milik pensyarah ini (Automasi Pengecaman)
-        // Memandangkan URL Skrip dalam sheet mungkin tidak menyimpan emel secara terus jika struktur lama digunakan,
-        // Kita gunakan logik Fallback: Skrip P2 yang markah asalnya sepadan, atau tunggu kemas kini backend.
-        // Di sini kita anggap 'emelPemilik' akan ditambah di backend kelak. 
-        // Buat masa ini, kita paparkan simulasi logik.
-        
-        let skrip = dbSkripInduk.find(s => s.fasaModerasi.includes('P2') && (s.emelPemilik === lec.email || s.urlSkrip));
+        // Cari skrip P2 milik pensyarah ini.
+        // Kita padankan melalui emelPemilik (dari Data_Pensyarah)
+        let skrip = dbSkripInduk.find(s => s.fasaModerasi.includes('P2') && (s.emelPemilik === lec.email));
         
         const tr = document.createElement('tr');
         tr.className = index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
