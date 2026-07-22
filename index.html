@@ -281,9 +281,9 @@
               </div>
             </div>
 
-            <!-- PDF Container (Telah Dibaiki Susun Atur Skrol) -->
-            <div id="canvasContainer" class="flex-1 min-h-0 glass-panel rounded-3xl overflow-auto p-4 bg-slate-100 relative shadow-inner block text-center">
-              <canvas id="scriptCanvas" class="shadow-2xl bg-white hidden mx-auto max-w-full rounded-lg origin-top"></canvas>
+            <!-- PDF Container -->
+            <div id="canvasContainer" class="flex-1 min-h-0 block text-center glass-panel rounded-3xl overflow-auto p-4 bg-slate-100 relative shadow-inner">
+              <canvas id="scriptCanvas" class="shadow-2xl mx-auto origin-top bg-white hidden max-w-full rounded-lg"></canvas>
               <div id="canvasPlaceholder" class="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8">
                 <div class="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center mb-4 mx-auto">
                   <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -310,6 +310,15 @@
             <div class="glass-panel p-5 rounded-3xl shadow-sm border border-slate-200 shrink-0">
               <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Senarai Tugas Semakan</h3>
               
+              <!-- Arahan Alur Kerja Fasa 2 -->
+              <div class="mb-3 p-3 bg-brand-50 border border-dashed border-brand-300 rounded-xl text-[11px] text-brand-800">
+                <p class="font-bold mb-1">📌 Panduan Muat Naik Skrip:</p>
+                <ul class="list-disc pl-4 space-y-0.5 text-brand-700">
+                  <li><b>Fasa 1 (P1):</b> Hanya Admin akan memuat naik 1 sampel.</li>
+                  <li><b>Fasa 2 (P2):</b> Setiap pensyarah perlu memuat naik 1 skrip wakil masing-masing.</li>
+                </ul>
+              </div>
+
               <div class="flex bg-slate-100 p-1 rounded-xl mb-3">
                 <button onclick="tukarFasaKerja('P1')" id="tabKerjaP1" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition-all">Fasa 1 (1 Sampel)</button>
                 <button onclick="tukarFasaKerja('P2')" id="tabKerjaP2" class="flex-1 py-1.5 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 transition-all">Fasa 2 (Wakil Pensyarah)</button>
@@ -436,8 +445,11 @@
       if (sesiLama) {
         try {
           dataSesi = JSON.parse(sesiLama);
-          document.getElementById('loginOverlay').classList.add('opacity-0', 'pointer-events-none');
-          setTimeout(() => document.getElementById('loginOverlay').classList.add('hidden'), 500);
+          const loginOverlay = document.getElementById('loginOverlay');
+          if(loginOverlay) {
+            loginOverlay.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => loginOverlay.classList.add('hidden'), 500);
+          }
           binaUISelepasLogin();
         } catch(e) {}
       }
@@ -448,6 +460,7 @@
      */
     function tunjukToast(mesej, jenis = 'info') {
       const container = document.getElementById('toastContainer');
+      if(!container) return;
       const toast = document.createElement('div');
       
       const warna = {
@@ -476,10 +489,15 @@
     }
 
     function sahkanLoginPensyarah() {
-      const emel = document.getElementById('lecturerEmailInput').value.trim();
-      const pass = document.getElementById('lecturerPasswordInput').value.trim();
+      const emelEl = document.getElementById('lecturerEmailInput');
+      const passEl = document.getElementById('lecturerPasswordInput');
       const errEl = document.getElementById('loginErrorMsg');
       const btn = document.getElementById('btnLoginSubmit');
+      
+      if(!emelEl || !passEl || !errEl || !btn) return;
+      
+      const emel = emelEl.value.trim();
+      const pass = passEl.value.trim();
       
       errEl.classList.add('hidden');
       if (!emel || !pass) {
@@ -499,11 +517,14 @@
           dataSesi = { email: res.email, nama: res.nama, peranan: res.peranan, password: pass };
           sessionStorage.setItem('modSesi', JSON.stringify(dataSesi));
           
-          document.getElementById('loginOverlay').classList.add('opacity-0');
-          setTimeout(() => {
-            document.getElementById('loginOverlay').classList.add('hidden');
-            binaUISelepasLogin();
-          }, 400);
+          const loginOverlay = document.getElementById('loginOverlay');
+          if(loginOverlay) {
+            loginOverlay.classList.add('opacity-0');
+            setTimeout(() => {
+              loginOverlay.classList.add('hidden');
+              binaUISelepasLogin();
+            }, 400);
+          }
         } else {
           errEl.innerText = res.message || "Akses ditolak."; errEl.classList.remove('hidden');
         }
@@ -522,27 +543,34 @@
      * 2. AUTOMASI PEMBINAAN STRUKTUR (ROUTING JS)
      */
     function binaUISelepasLogin() {
-      document.getElementById('appLayout').classList.remove('hidden');
+      const appLayout = document.getElementById('appLayout');
+      if(appLayout) appLayout.classList.remove('hidden');
       
       // Update Profil Sidebar
-      document.getElementById('activeLecturerName').innerText = dataSesi.nama;
-      document.getElementById('activeLecturerRole').innerText = dataSesi.peranan;
-      document.getElementById('avatarName').innerText = dataSesi.nama.charAt(0);
+      const nameEl = document.getElementById('activeLecturerName');
+      const roleEl = document.getElementById('activeLecturerRole');
+      const avatarEl = document.getElementById('avatarName');
+      
+      if(nameEl) nameEl.innerText = dataSesi.nama;
+      if(roleEl) roleEl.innerText = dataSesi.peranan;
+      if(avatarEl && dataSesi.nama) avatarEl.innerText = dataSesi.nama.charAt(0);
 
       // Bina Navigasi Kiri secara Automatik
       const navContainer = document.getElementById('navContainer');
-      navContainer.innerHTML = '';
+      if(navContainer) {
+        navContainer.innerHTML = '';
 
-      const btnGaya = "nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-600 font-medium hover:bg-slate-50 transition-all cursor-pointer w-full text-left mb-1";
+        const btnGaya = "nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-600 font-medium hover:bg-slate-50 transition-all cursor-pointer w-full text-left mb-1";
 
-      if (dataSesi.peranan === "Admin") {
-        navContainer.innerHTML += `<button onclick="tukarPandangan('adminDashboard')" class="${btnGaya} active" id="nav_adminDashboard">📊 Dashboard Admin</button>`;
+        if (dataSesi.peranan === "Admin") {
+          navContainer.innerHTML += `<button onclick="tukarPandangan('adminDashboard')" class="${btnGaya} active" id="nav_adminDashboard">📊 Dashboard Admin</button>`;
+        }
+        
+        navContainer.innerHTML += `
+          <button onclick="tukarPandangan('workspace')" class="${btnGaya} ${dataSesi.peranan !== 'Admin' ? 'active' : ''}" id="nav_workspace">📝 Kanvas Semakan (P1/P2)</button>
+          <button onclick="tukarPandangan('lecUpload')" class="${btnGaya}" id="nav_lecUpload">📤 Muat Naik Skrip (P2)</button>
+        `;
       }
-      
-      navContainer.innerHTML += `
-        <button onclick="tukarPandangan('workspace')" class="${btnGaya} ${dataSesi.peranan !== 'Admin' ? 'active' : ''}" id="nav_workspace">📝 Kanvas Semakan (P1/P2)</button>
-        <button onclick="tukarPandangan('lecUpload')" class="${btnGaya}" id="nav_lecUpload">📤 Muat Naik Skrip (P2)</button>
-      `;
 
       // Paparkan panel yang betul
       tukarPandangan(dataSesi.peranan === "Admin" ? 'adminDashboard' : 'workspace');
@@ -645,12 +673,14 @@
       const tab1 = document.getElementById('tabKerjaP1');
       const tab2 = document.getElementById('tabKerjaP2');
       
-      if(fasa === 'P1') {
-        tab1.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition-all";
-        tab2.className = "flex-1 py-1.5 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 transition-all";
-      } else {
-        tab2.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition-all";
-        tab1.className = "flex-1 py-1.5 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 transition-all";
+      if(tab1 && tab2) {
+        if(fasa === 'P1') {
+          tab1.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition-all";
+          tab2.className = "flex-1 py-1.5 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 transition-all";
+        } else {
+          tab2.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition-all";
+          tab1.className = "flex-1 py-1.5 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 transition-all";
+        }
       }
       
       binaSenaraiKerjaPensyarah();
@@ -694,8 +724,8 @@
 
       lecturers.forEach((lec, index) => {
         // Cari skrip P2 milik pensyarah ini.
-        // Kita padankan melalui emelPemilik (dari Data_Pensyarah)
-        let skrip = dbSkripInduk.find(s => s.fasaModerasi.includes('P2') && (s.emelPemilik === lec.email));
+        // Kita padankan melalui emelPensyarah (dari Data_Pensyarah / Skrip_Pelajar col 5)
+        let skrip = dbSkripInduk.find(s => s.fasaModerasi.includes('P2') && (s.emelPensyarah === lec.email));
         
         const tr = document.createElement('tr');
         tr.className = index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
@@ -781,7 +811,7 @@
       const btn = document.getElementById(btnId);
       if(!studentId || !markahA || !fileObj) { tunjukToast("Sila lengkapkan semua medan dan pilih fail PDF.", "warning"); return; }
       
-      btn.innerText = "Memuat Naik..."; btn.disabled = true;
+      if(btn) { btn.innerText = "Memuat Naik..."; btn.disabled = true; }
       
       const reader = new FileReader();
       reader.onload = e => {
@@ -790,7 +820,7 @@
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
             action: "adminUploadScript", 
-            adminEmail: dataSesi.email, 
+            adminEmail: dataSesi.email, // This is crucial now, backend saves this
             adminPassword: dataSesi.password,
             angkaGiliran: studentId,
             fasaModerasi: fasa,
@@ -798,8 +828,10 @@
             fileData: e.target.result
           })
         }).then(r => r.json()).then(res => {
-          btn.innerText = "Muat Naik Berjaya";
-          setTimeout(() => { btn.innerText = btnId === 'btnLecUpload' ? 'Muat Naik Fail Sekarang' : 'Daftarkan Sampel P1'; btn.disabled = false; }, 2000);
+          if(btn) {
+            btn.innerText = "Muat Naik Berjaya";
+            setTimeout(() => { btn.innerText = btnId === 'btnLecUpload' ? 'Muat Naik Fail Sekarang' : 'Daftarkan Sampel P1'; btn.disabled = false; }, 2000);
+          }
           
           if (res.status === "error") { tunjukToast("Ralat: " + res.message, "error"); }
           else {
@@ -809,17 +841,17 @@
             
             // Clear inputs
             if(btnId === 'btnLecUpload') {
-              document.getElementById('lecUploadAngkaGiliran').value = '';
-              document.getElementById('lecUploadMarkah').value = '';
-              document.getElementById('lecUploadFile').value = '';
+              const elId = document.getElementById('lecUploadAngkaGiliran'); if(elId) elId.value = '';
+              const elMark = document.getElementById('lecUploadMarkah'); if(elMark) elMark.value = '';
+              const elFile = document.getElementById('lecUploadFile'); if(elFile) elFile.value = '';
             } else {
-              document.getElementById('adminUploadP1Angka').value = '';
-              document.getElementById('adminUploadP1Markah').value = '';
-              document.getElementById('adminUploadP1File').value = '';
+              const elP1Id = document.getElementById('adminUploadP1Angka'); if(elP1Id) elP1Id.value = '';
+              const elP1Mark = document.getElementById('adminUploadP1Markah'); if(elP1Mark) elP1Mark.value = '';
+              const elP1File = document.getElementById('adminUploadP1File'); if(elP1File) elP1File.value = '';
             }
           }
         }).catch(err => {
-          btn.innerText = "Gagal. Cuba Lagi"; btn.disabled = false;
+          if(btn) { btn.innerText = "Gagal. Cuba Lagi"; btn.disabled = false; }
           tunjukToast("Ralat rangkaian.", "error");
         });
       };
@@ -827,17 +859,29 @@
     }
 
     function lakukanUploadPensyarahP2() {
-      const id = document.getElementById('lecUploadAngkaGiliran').value.trim();
-      const mark = document.getElementById('lecUploadMarkah').value.trim();
-      const file = document.getElementById('lecUploadFile').files[0];
+      const idEl = document.getElementById('lecUploadAngkaGiliran');
+      const markEl = document.getElementById('lecUploadMarkah');
+      const fileEl = document.getElementById('lecUploadFile');
+      
+      if(!idEl || !markEl || !fileEl) return;
+      
+      const id = idEl.value.trim();
+      const mark = markEl.value.trim();
+      const file = fileEl.files[0];
       // Secara logiknya bila pensyarah upload, belum ada kategori, sistem bagi default
       prosesMuatNaik('btnLecUpload', id, 'P2: Menunggu Kategori', mark, file);
     }
 
     function lakukanUploadAdminP1() {
-      const id = document.getElementById('adminUploadP1Angka').value.trim();
-      const mark = document.getElementById('adminUploadP1Markah').value.trim();
-      const file = document.getElementById('adminUploadP1File').files[0];
+      const idEl = document.getElementById('adminUploadP1Angka');
+      const markEl = document.getElementById('adminUploadP1Markah');
+      const fileEl = document.getElementById('adminUploadP1File');
+      
+      if(!idEl || !markEl || !fileEl) return;
+      
+      const id = idEl.value.trim();
+      const mark = markEl.value.trim();
+      const file = fileEl.files[0];
       prosesMuatNaik('btnAdminUploadP1', id, 'P1: Sampel Rawak', mark, file);
     }
 
@@ -848,11 +892,14 @@
       pelajarAktif = skrip;
       binaSenaraiKerjaPensyarah(); // Render semual supaya ada highlight aktif
 
-      document.getElementById('panelBorangMarkah').classList.remove('opacity-50', 'pointer-events-none');
-      document.getElementById('labelTugasSemasa').innerText = skrip.angkaGiliran;
+      const panelBorang = document.getElementById('panelBorangMarkah');
+      const labelTugas = document.getElementById('labelTugasSemasa');
+      const borangA = document.getElementById('borangMarkahA');
+      const borangG = document.getElementById('borangMarkahG');
       
-      // Isi borang
-      document.getElementById('borangMarkahA').value = skrip.markahPemeriksa;
+      if(panelBorang) panelBorang.classList.remove('opacity-50', 'pointer-events-none');
+      if(labelTugas) labelTugas.innerText = skrip.angkaGiliran;
+      if(borangA) borangA.value = skrip.markahPemeriksa;
       
       const kriteria = ['a1','a2','b1','b2','b3','c1','c2','c3'];
       kriteria.forEach(k => {
@@ -860,14 +907,16 @@
         if(el) el.value = rekod ? (rekod[`t3_${k}`] || '') : '';
       });
       
-      document.getElementById('borangMarkahG').value = rekod ? (rekod.markahAkhir || 0) : 0;
+      if(borangG) borangG.value = rekod ? (rekod.markahAkhir || 0) : 0;
       kiraSkorAuto();
 
       // Uruskan PDF viewer
       const placeholder = document.getElementById('canvasPlaceholder');
-      placeholder.innerHTML = `<div class="animate-pulse text-brand-600 font-bold mt-4">Memuat turun PDF pelajar... Sila tunggu.</div>`;
-      canvas.classList.add('hidden');
-      document.getElementById('pdfNavigationControls').classList.add('hidden');
+      if(placeholder) placeholder.innerHTML = `<div class="animate-pulse text-brand-600 font-bold mt-4">Memuat turun PDF pelajar... Sila tunggu.</div>`;
+      
+      if(canvas) canvas.classList.add('hidden');
+      const pdfNav = document.getElementById('pdfNavigationControls');
+      if(pdfNav) pdfNav.classList.add('hidden');
       
       // Reset Lakaran
       lakaranSemuaHalaman = {};
@@ -882,7 +931,7 @@
       }
 
       if(!skrip.urlSkrip) {
-        placeholder.innerHTML = `<div class="text-red-500 font-bold mt-4">Tiada ID fail PDF dijumpai untuk pelajar ini.</div>`;
+        if(placeholder) placeholder.innerHTML = `<div class="text-red-500 font-bold mt-4">Tiada ID fail PDF dijumpai untuk pelajar ini.</div>`;
         return;
       }
 
@@ -898,12 +947,13 @@
           pdfjsLib.getDocument({ data: arr }).promise.then(pdf => {
             pdfDoc = pdf;
             pageTotal = pdf.numPages;
-            document.getElementById('pdfTotalPagesNum').innerText = pageTotal;
-            document.getElementById('pdfNavigationControls').classList.remove('hidden');
+            const pdfTotalEl = document.getElementById('pdfTotalPagesNum');
+            if(pdfTotalEl) pdfTotalEl.innerText = pageTotal;
+            if(pdfNav) pdfNav.classList.remove('hidden');
             renderHalamanPdf();
           });
         }).catch(e => {
-          placeholder.innerHTML = `<div class="text-red-500 font-bold mt-4">Gagal memuat turun PDF. Pastikan URL Google Drive betul.</div>`;
+          if(placeholder) placeholder.innerHTML = `<div class="text-red-500 font-bold mt-4">Gagal memuat turun PDF. Pastikan URL Google Drive betul.</div>`;
         });
     }
 
@@ -914,11 +964,13 @@
         const el = document.getElementById(`rubric_${k}`);
         if(el) total += parseFloat(el.value) || 0;
       });
-      document.getElementById('jumlahMarkahRubrik').innerText = `${total} / 50`;
+      const jumEl = document.getElementById('jumlahMarkahRubrik');
+      if(jumEl) jumEl.innerText = `${total} / 50`;
       
       // Secara simplistik, jadikan jumlah moderasi = markah akhir untuk contoh ini.
       // (Logik P1/P2 penyelarasan boleh ditambah berdasarkan skrip asal)
-      document.getElementById('borangMarkahG').value = total;
+      const borangG = document.getElementById('borangMarkahG');
+      if(borangG) borangG.value = total;
     }
 
     function simpanRekodSemakan() {
@@ -932,34 +984,36 @@
         emelPensyarah: dataSesi.email,
         password: dataSesi.password,
         fasaModerasi: pelajarAktif.fasaModerasi,
-        markahPemeriksa: document.getElementById('borangMarkahA').value,
-        t3_a1: document.getElementById('rubric_a1').value,
-        t3_a2: document.getElementById('rubric_a2').value,
-        t3_b1: document.getElementById('rubric_b1').value,
-        t3_b2: document.getElementById('rubric_b2').value,
-        t3_b3: document.getElementById('rubric_b3').value,
-        t3_c1: document.getElementById('rubric_c1').value,
-        t3_c2: document.getElementById('rubric_c2').value,
-        t3_c3: document.getElementById('rubric_c3').value,
-        markahAkhir: document.getElementById('borangMarkahG').value,
+        markahPemeriksa: document.getElementById('borangMarkahA') ? document.getElementById('borangMarkahA').value : 0,
+        t3_a1: document.getElementById('rubric_a1') ? document.getElementById('rubric_a1').value : 0,
+        t3_a2: document.getElementById('rubric_a2') ? document.getElementById('rubric_a2').value : 0,
+        t3_b1: document.getElementById('rubric_b1') ? document.getElementById('rubric_b1').value : 0,
+        t3_b2: document.getElementById('rubric_b2') ? document.getElementById('rubric_b2').value : 0,
+        t3_b3: document.getElementById('rubric_b3') ? document.getElementById('rubric_b3').value : 0,
+        t3_c1: document.getElementById('rubric_c1') ? document.getElementById('rubric_c1').value : 0,
+        t3_c2: document.getElementById('rubric_c2') ? document.getElementById('rubric_c2').value : 0,
+        t3_c3: document.getElementById('rubric_c3') ? document.getElementById('rubric_c3').value : 0,
+        markahAkhir: document.getElementById('borangMarkahG') ? document.getElementById('borangMarkahG').value : 0,
         dataLakaran: JSON.stringify({ annotations: lakaranSemuaHalaman })
       };
 
       const btn = document.getElementById('btnSimpanKerja');
-      btn.innerText = "Menghantar..."; btn.disabled = true;
+      if(btn) { btn.innerText = "Menghantar..."; btn.disabled = true; }
 
       fetch(urlAPI, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
       }).then(r => r.json()).then(res => {
-        btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Tersimpan!`;
-        setTimeout(() => { btn.innerHTML = `Simpan & Hantar Laporan`; btn.disabled = false; }, 2000);
+        if(btn) {
+          btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Tersimpan!`;
+          setTimeout(() => { btn.innerHTML = `Simpan & Hantar Laporan`; btn.disabled = false; }, 2000);
+        }
         
         tunjukToast("Laporan Moderasi berjaya disimpan.", "success");
         tarikDataDariSheets(); // Refresh data supaya senarai tick hijau
       }).catch(err => {
-        btn.innerHTML = `Simpan & Hantar Laporan`; btn.disabled = false;
+        if(btn) { btn.innerHTML = `Simpan & Hantar Laporan`; btn.disabled = false; }
         tunjukToast("Ralat penyambungan. Gagal menyimpan.", "error");
       });
     }
@@ -968,8 +1022,9 @@
      * 7. FUNGSI CANVAS & PDF.JS
      */
     function renderHalamanPdf() {
-      if(!pdfDoc) return;
-      document.getElementById('pdfCurrentPageNum').innerText = pageNum;
+      if(!pdfDoc || !canvas || !ctx) return;
+      const pdfCurEl = document.getElementById('pdfCurrentPageNum');
+      if(pdfCurEl) pdfCurEl.innerText = pageNum;
       
       pdfDoc.getPage(pageNum).then(page => {
         const vp = page.getViewport({ scale: 1.5 });
@@ -978,7 +1033,8 @@
         canvas.height = vp.height * scaleFactor;
         
         page.render({ canvasContext: ctx, viewport: page.getViewport({ scale: 1.5 * scaleFactor }) }).promise.then(() => {
-          document.getElementById('canvasPlaceholder').classList.add('hidden');
+          const placeholder = document.getElementById('canvasPlaceholder');
+          if(placeholder) placeholder.classList.add('hidden');
           canvas.classList.remove('hidden');
           
           if (!lakaranSemuaHalaman[pageNum]) lakaranSemuaHalaman[pageNum] = [];
@@ -1026,6 +1082,7 @@
     }
 
     function setupCanvasEvents() {
+      if(!canvas) return;
       canvas.onmousedown = e => { isDrawing = true; titikAkhir = null; rekodLakaran(e, 'start'); };
       canvas.onmousemove = e => { if(isDrawing) rekodLakaran(e, 'move'); };
       window.onmouseup = () => { isDrawing = false; titikAkhir = null; };
@@ -1036,6 +1093,7 @@
     }
 
     function rekodLakaran(e, type) {
+      if(!canvas || !ctx) return;
       const rect = canvas.getBoundingClientRect();
       const x = (e.clientX - rect.left) * (canvas.width / rect.width);
       const y = (e.clientY - rect.top) * (canvas.height / rect.height);
@@ -1056,6 +1114,7 @@
     }
 
     function lukisSemulaAtasCanvas() {
+      if(!ctx) return;
       lakaranHalamanSemasa.forEach(pt => {
         ctx.strokeStyle = pt.color || '#EF4444'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         if (pt.type === 'start') { ctx.beginPath(); ctx.moveTo(pt.x, pt.y); }
