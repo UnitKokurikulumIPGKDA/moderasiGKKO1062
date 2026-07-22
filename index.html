@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moderasi Pintar — Editorial SaaS</title>
+  <title>Moderasi Pintar — Digital Editorial SaaS</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -53,7 +53,7 @@
       <div class="text-center border-b border-slate-100 pb-4">
         <span class="text-[10px] font-bold tracking-widest uppercase text-teal-600">IPG Kampus Darulaman</span>
         <h2 class="text-2xl font-display font-extrabold text-slate-900 mt-2">Moderasi Pintar</h2>
-        <p class="text-slate-500 mt-1 text-xs">GKKO1062 / GKKO</p>
+        <p class="text-slate-500 mt-1 text-xs">GKKO1062 / MPU3411</p>
       </div>
       <div class="flex flex-col gap-4">
         <div>
@@ -67,6 +67,9 @@
         <p id="loginErrorMsg" class="hidden text-xs font-bold text-red-600 text-center bg-red-50 py-2.5 rounded-lg"></p>
       </div>
       <button onclick="sahkanLoginPensyarah()" id="btnLoginSubmit" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition-all shadow-md">Log Masuk</button>
+      <div class="text-[9px] text-slate-400 text-center font-semibold pt-2 border-t border-slate-100 uppercase tracking-tighter">
+        HAKCIPTA UNITKO IPG KAMPUS DARULAMAN DIBANGUNKAN OLEH HANIFF FAIZAL BIN CHEK ANI
+      </div>
     </div>
   </div>
 
@@ -84,7 +87,10 @@
           <p id="activeLecturerName" class="text-sm font-bold text-slate-900 truncate">Nama</p>
           <p id="activeLecturerRole" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 truncate">Peranan</p>
         </div>
-        <button onclick="logoutPensyarah()" class="w-full text-xs text-red-600 font-bold py-2.5 rounded-lg bg-red-50 border border-red-100 hover:bg-red-100 transition-colors">Log Keluar</button>
+        <button onclick="logoutPensyarah()" class="w-full text-xs text-red-600 font-bold py-2.5 rounded-lg bg-red-50 border border-red-100 hover:bg-red-100 transition-colors mb-3">Log Keluar</button>
+        <div class="text-[8.5px] text-slate-400 text-center leading-tight font-medium border-t border-slate-200/60 pt-2.5 uppercase tracking-tighter">
+          HAKCIPTA UNITKO IPG KAMPUS DARULAMAN DIBANGUNKAN OLEH HANIFF FAIZAL BIN CHEK ANI
+        </div>
       </div>
     </aside>
 
@@ -290,11 +296,16 @@
               </button>
               
               <div class="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-300 shadow-sm">
+                <select id="selectFasaCetakanLec" class="text-xs font-bold bg-transparent text-teal-700 rounded-lg px-2.5 py-2 focus:outline-none border-r border-slate-200">
+                  <option value="semua">📌 Semua Skrip (P1 & P2)</option>
+                  <option value="P1">🔵 Hanya Fasa 1 (P1)</option>
+                  <option value="P2">🟢 Hanya Fasa 2 (P2)</option>
+                </select>
                 <select id="selectJenisCetakanLec" class="text-xs font-bold bg-transparent text-slate-800 rounded-lg px-2.5 py-2 focus:outline-none">
                   <option value="lamPt0402">📄 Borang Moderasi Rasmi (LAM-PT-04-02)</option>
                   <option value="ringkasan">🖨️ Laporan Ringkasan Penilaian Moderasi</option>
                 </select>
-                <button onclick="laksanaCetakanPilihan('selectJenisCetakanLec')" class="text-xs font-bold bg-slate-900 hover:bg-black text-white px-4 py-2 rounded-lg shadow transition-all flex items-center gap-1.5 shrink-0">
+                <button onclick="laksanaCetakanPilihan('selectJenisCetakanLec', 'selectFasaCetakanLec')" class="text-xs font-bold bg-slate-900 hover:bg-black text-white px-4 py-2 rounded-lg shadow transition-all flex items-center gap-1.5 shrink-0">
                   <span>🖨️</span> Cetak Now
                 </button>
               </div>
@@ -385,11 +396,16 @@
               </button>
               
               <div class="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-300 shadow-sm">
+                <select id="selectFasaCetakanAdmin" class="text-xs font-bold bg-transparent text-teal-700 rounded-lg px-2.5 py-2 focus:outline-none border-r border-slate-200">
+                  <option value="semua">📌 Semua Skrip (P1 & P2)</option>
+                  <option value="P1">🔵 Hanya Fasa 1 (P1)</option>
+                  <option value="P2">🟢 Hanya Fasa 2 (P2)</option>
+                </select>
                 <select id="selectJenisCetakanAdmin" class="text-xs font-bold bg-transparent text-slate-800 rounded-lg px-2.5 py-2 focus:outline-none">
                   <option value="lamPt0402">📄 Borang Moderasi Rasmi (LAM-PT-04-02)</option>
                   <option value="ringkasan">🖨️ Laporan Ringkasan Status Semakan Admin</option>
                 </select>
-                <button onclick="laksanaCetakanPilihan('selectJenisCetakanAdmin')" class="text-xs font-bold bg-slate-900 hover:bg-black text-white px-4 py-2 rounded-lg shadow transition-all flex items-center gap-1.5 shrink-0">
+                <button onclick="laksanaCetakanPilihan('selectJenisCetakanAdmin', 'selectFasaCetakanAdmin')" class="text-xs font-bold bg-slate-900 hover:bg-black text-white px-4 py-2 rounded-lg shadow transition-all flex items-center gap-1.5 shrink-0">
                   <span>🖨️</span> Cetak Now
                 </button>
               </div>
@@ -493,9 +509,11 @@
   <!-- KONTENA CETAKAN BULK -->
   <div id="bulkPrintContainer"></div>
   <div id="printFooterSummary" style="display:none">
-    <div class="grid grid-cols-2 gap-6 p-5 text-xs">
+    <div class="grid grid-cols-2 gap-6 p-5 text-xs border border-slate-300 rounded-lg">
       <div><p class="font-bold uppercase text-sm mb-1 text-slate-800">Verifikasi Semakan Rasmi (Multi-layer)</p><p class="mt-1">Angka Giliran: <span id="pStudent" class="font-mono font-bold text-sm bg-slate-100 px-1">-</span></p><p>Pemeriksa: <span id="pLecturer" class="font-bold">-</span></p></div>
-      <div class="text-right"><p class="font-bold text-sm text-slate-500">Skor Akhir Moderasi</p><p class="text-2xl font-bold text-slate-900 font-mono mt-1"><span id="pScore">-</span> / 50</p></div>
+      <div class="text-right flex flex-col justify-between"><p class="font-bold text-sm text-slate-500">Skor Akhir Moderasi</p><p class="text-2xl font-bold text-slate-900 font-mono mt-1"><span id="pScore">-</span> / 50</p>
+        <p class="text-[8px] text-slate-400 font-bold uppercase tracking-tight mt-2">HAKCIPTA UNITKO IPG KAMPUS DARULAMAN DIBANGUNKAN OLEH HANIFF FAIZAL BIN CHEK ANI</p>
+      </div>
     </div>
   </div>
   
@@ -614,28 +632,31 @@
       });
     }
 
-    function laksanaCetakanPilihan(selectId) {
-      const sel = document.getElementById(selectId);
-      if (!sel) return;
-      const jenis = sel.value;
+    function laksanaCetakanPilihan(selectJenisId, selectFasaId) {
+      const selJenis = document.getElementById(selectJenisId);
+      const selFasa = document.getElementById(selectFasaId);
+      if (!selJenis) return;
+      
+      const jenis = selJenis.value;
+      const fasa = selFasa ? selFasa.value : 'semua';
       
       if (jenis === 'lamPt0402') {
-        cetakBorangLamPt0402();
+        cetakBorangLamPt0402(fasa);
       } else if (jenis === 'ringkasan') {
-        if (selectId === 'selectJenisCetakanAdmin') {
-          cetakLaporanRumusanAdmin();
+        if (selectJenisId === 'selectJenisCetakanAdmin') {
+          cetakLaporanRumusanAdmin(fasa);
         } else {
-          cetakRingkasanPensyarah();
+          cetakRingkasanPensyarah(fasa);
         }
       }
     }
 
-    function cetakBorangLamPt0402() {
+    function cetakBorangLamPt0402(fasaFilter = 'semua') {
       const printContainer = document.getElementById('bulkPrintContainer');
       if (!printContainer) return;
       printContainer.innerHTML = '';
 
-      const scripts = dbSkripInduk.length > 0 ? dbSkripInduk : [
+      let scripts = dbSkripInduk.length > 0 ? dbSkripInduk : [
         { angkaGiliran: '2024182310152', markahPemeriksa: '86', fasaModerasi: 'P1' },
         { angkaGiliran: '2024182310011', markahPemeriksa: '85', fasaModerasi: 'P1' },
         { angkaGiliran: '2024182310142', markahPemeriksa: '85', fasaModerasi: 'P1' },
@@ -647,14 +668,18 @@
         { angkaGiliran: '2024182310053', markahPemeriksa: '9', fasaModerasi: 'P1' }
       ];
 
+      if (fasaFilter && fasaFilter !== 'semua') {
+        scripts = scripts.filter(s => s.fasaModerasi && s.fasaModerasi.toString().toUpperCase().includes(fasaFilter.toUpperCase()));
+      }
+
       let rowsHtml = '';
       let lecturerDiffSum = {};
       let lecturerDiffCount = {};
 
       scripts.forEach((skrip, idx) => {
         const reviews = dbHasilSemakan.filter(h => h.angkaGiliran.toString() === skrip.angkaGiliran.toString());
-        const p1Rev = reviews.find(r => r.fasaModerasi && r.fasaModerasi.includes('P1')) || reviews[0];
-        const p2Rev = reviews.find(r => r.fasaModerasi && r.fasaModerasi.includes('P2'));
+        const p1Rev = reviews.find(r => r.fasaModerasi && r.fasaModerasi.toString().toUpperCase().includes('P1'));
+        const p2Rev = reviews.find(r => r.fasaModerasi && r.fasaModerasi.toString().toUpperCase().includes('P2'));
 
         let a = parseFloat(skrip.markahPemeriksa);
         let b = p1Rev ? parseFloat(p1Rev.markahModerasiP1 || p1Rev.markahAkhir) : null;
@@ -665,16 +690,19 @@
 
         let f = (p1Rev && p1Rev.markahPenyelarasan !== undefined && p1Rev.markahPenyelarasan !== '') 
                 ? parseFloat(p1Rev.markahPenyelarasan) 
-                : (c !== null ? c : '');
+                : (e !== null ? e : (c !== null ? c : ''));
 
-        let g = (p1Rev && p1Rev.markahAkhir) 
-                ? parseFloat(p1Rev.markahAkhir) 
-                : (!isNaN(a) ? (f !== '' && !isNaN(f) ? a + f : a) : '');
+        let g = (d !== null) ? d : ((b !== null) ? b : (!isNaN(a) ? (f !== '' && !isNaN(f) ? a + f : a) : ''));
 
         if (p1Rev && c !== null && !isNaN(c)) {
           const lecName = p1Rev.emelPensyarah || 'Pemeriksa';
           if (!lecturerDiffSum[lecName]) { lecturerDiffSum[lecName] = 0; lecturerDiffCount[lecName] = 0; }
           lecturerDiffSum[lecName] += c;
+          lecturerDiffCount[lecName]++;
+        } else if (p2Rev && e !== null && !isNaN(e)) {
+          const lecName = p2Rev.emelPensyarah || 'Pemeriksa';
+          if (!lecturerDiffSum[lecName]) { lecturerDiffSum[lecName] = 0; lecturerDiffCount[lecName] = 0; }
+          lecturerDiffSum[lecName] += e;
           lecturerDiffCount[lecName]++;
         }
 
@@ -708,7 +736,7 @@
       } else {
         lecAdjHtml = `
           <tr style="border-bottom: 1px solid #000;">
-            <td style="border: 1px solid #000; padding: 4px 8px; text-align: left;">HANIFF FAIZAL BIN CHEK ANI</td>
+            <td style="border: 1px solid #000; padding: 4px 8px; text-align: left;">MUSAIDI BIN MUSTAFA</td>
             <td style="border: 1px solid #000; padding: 4px 8px; text-align: center; font-weight: bold; font-family: monospace;">-0.5</td>
           </tr>
         `;
@@ -750,11 +778,11 @@
               </tr>
             </thead>
             <tbody>
-              ${rowsHtml}
+              ${rowsHtml || '<tr><td colspan="9" style="padding: 10px;">Tiada rekod skrip.</td></tr>'}
             </tbody>
           </table>
 
-          <div style="font-size: 9px; margin-top: 4px; margin-bottom: 16px; font-style: italic; color: #333;">
+          <div style="font-size: 9px; margin-top: 4px; margin-bottom: 12px; font-style: italic; color: #333;">
             *Diperlukan jika beza markah antara (b) dan (a) ≥ 5
           </div>
 
@@ -786,7 +814,11 @@
             </div>
           </div>
 
-          <div style="display: flex; justify-content: space-between; margin-top: 25px; font-size: 9px; color: #555; border-top: 1px solid #000; padding-top: 4px;">
+          <div style="margin-top: 15px; font-size: 8px; color: #64748b; text-align: center; border-top: 1px solid #ddd; padding-top: 4px; font-weight: bold; text-transform: uppercase; tracking-tight">
+            HAKCIPTA UNITKO IPG KAMPUS DARULAMAN DIBANGUNKAN OLEH HANIFF FAIZAL BIN CHEK ANI
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 9px; color: #555; border-top: 1px solid #000; padding-top: 4px;">
             <div>Januari 2021</div>
             <div style="font-weight: bold;">LAM-PT-04-02</div>
             <div>1/1</div>
@@ -899,7 +931,7 @@
       if (elBeza) elBeza.innerText = countBeza > 0 ? `${(sumBeza / countBeza).toFixed(1)} M` : '0.0 M';
     }
 
-    function cetakRingkasanPensyarah() {
+    function cetakRingkasanPensyarah(fasaFilter = 'semua') {
       if (!dataSesi.email) {
         tunjukToast("Sila log masuk terlebih dahulu.", "warning");
         return;
@@ -910,9 +942,15 @@
       printContainer.innerHTML = '';
 
       const userReviews = dbHasilSemakan.filter(h => h.emelPensyarah === dataSesi.email);
+      let scripts = dbSkripInduk;
+
+      if (fasaFilter && fasaFilter !== 'semua') {
+        scripts = scripts.filter(s => s.fasaModerasi && s.fasaModerasi.toString().toUpperCase().includes(fasaFilter.toUpperCase()));
+      }
+
       let rowsHtml = '';
 
-      dbSkripInduk.forEach((skrip, idx) => {
+      scripts.forEach((skrip, idx) => {
         const myReview = userReviews.find(r => r.angkaGiliran.toString() === skrip.angkaGiliran.toString());
         const isDisemak = !!myReview;
 
@@ -941,7 +979,7 @@
           <div>
             <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #0d9488;">IPG Kampus Darulaman</span>
             <h1 style="font-size: 20px; font-weight: 800; margin: 4px 0 0 0; font-family: 'Space Grotesk', sans-serif;">LAPORAN RINGKASAN PENILAIAN MODERASI</h1>
-            <p style="font-size: 11px; margin: 2px 0 0 0; color: #475569;">Kursus GKKO1062 — Kokurikulum dan Kesihatan Diri</p>
+            <p style="font-size: 11px; margin: 2px 0 0 0; color: #475569;">Kursus GKKO1062 — Kokurikulum dan Kesihatan Diri (${fasaFilter.toUpperCase()})</p>
           </div>
           <div style="text-align: right; font-size: 10px; color: #64748b;">
             <p style="margin:0;"><strong>Tarikh Cetakan:</strong> ${new Date().toLocaleDateString('ms-MY')}</p>
@@ -952,7 +990,7 @@
         <div style="margin-bottom: 16px; font-size: 11px; background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px;">
           <p style="margin: 0 0 4px 0;"><strong>Nama Pensyarah Penilai:</strong> ${dataSesi.nama}</p>
           <p style="margin: 0 0 4px 0;"><strong>Emel Rasmi:</strong> ${dataSesi.email}</p>
-          <p style="margin: 0;"><strong>Jumlah Skrip Disemak:</strong> ${userReviews.length} / ${dbSkripInduk.length}</p>
+          <p style="margin: 0;"><strong>Jumlah Skrip Disemak:</strong> ${userReviews.length} / ${scripts.length}</p>
         </div>
 
         <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 24px;">
@@ -969,11 +1007,11 @@
             </tr>
           </thead>
           <tbody>
-            ${rowsHtml || '<tr><td colspan="8" style="padding: 12px; text-align: center;">Tiada rekod penilaian.</td></tr>'}
+            ${rowsHtml || '<tr><td colspan="8" style="padding: 12px; text-align: center;">Tiada rekod penilaian bagi fasa ini.</td></tr>'}
           </tbody>
         </table>
 
-        <div style="margin-top: 40px; border-top: 1px solid #cbd5e1; padding-top: 16px; font-size: 10px; display: flex; justify-content: space-between;">
+        <div style="margin-top: 30px; border-top: 1px solid #cbd5e1; padding-top: 16px; font-size: 10px; display: flex; justify-content: space-between;">
           <div>
             <p style="margin:0;">Pengesahan Penilai:</p>
             <div style="height: 45px;"></div>
@@ -982,6 +1020,10 @@
           <div style="text-align: right; color: #94a3b8; align-self: flex-end;">
             <p style="margin:0;">Dokumen Rasmi Dijana Secara Digital</p>
           </div>
+        </div>
+
+        <div style="margin-top: 20px; font-size: 8px; color: #64748b; text-align: center; border-top: 1px solid #ddd; padding-top: 4px; font-weight: bold; text-transform: uppercase;">
+          HAKCIPTA UNITKO IPG KAMPUS DARULAMAN DIBANGUNKAN OLEH HANIFF FAIZAL BIN CHEK ANI
         </div>
       `;
 
@@ -1060,7 +1102,7 @@
       if (statBelum) statBelum.innerText = countBelum;
     }
 
-    function cetakLaporanRumusanAdmin() {
+    function cetakLaporanRumusanAdmin(fasaFilter = 'semua') {
       const printContainer = document.getElementById('bulkPrintContainer');
       if (!printContainer) return;
       printContainer.innerHTML = '';
@@ -1103,7 +1145,7 @@
           <div>
             <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #0d9488;">IPG Kampus Darulaman</span>
             <h1 style="font-size: 20px; font-weight: 800; margin: 4px 0 0 0; font-family: 'Space Grotesk', sans-serif;">LAPORAN STATUS SEMAKAN & MODERASI PENSYARAH</h1>
-            <p style="font-size: 11px; margin: 2px 0 0 0; color: #475569;">Kursus GKKO1062 — Penyelarasan Peringkat Jabatan</p>
+            <p style="font-size: 11px; margin: 2px 0 0 0; color: #475569;">Kursus GKKO1062 — Penyelarasan Peringkat Jabatan (${fasaFilter.toUpperCase()})</p>
           </div>
           <div style="text-align: right; font-size: 10px; color: #64748b;">
             <p style="margin:0;"><strong>Tarikh Dijana:</strong> ${new Date().toLocaleDateString('ms-MY')}</p>
@@ -1128,7 +1170,7 @@
           </tbody>
         </table>
 
-        <div style="margin-top: 40px; border-top: 1px solid #cbd5e1; padding-top: 16px; font-size: 10px; display: flex; justify-content: space-between;">
+        <div style="margin-top: 30px; border-top: 1px solid #cbd5e1; padding-top: 16px; font-size: 10px; display: flex; justify-content: space-between;">
           <div>
             <p style="margin:0;">Pengesahan Penyelaras Kursus (Admin):</p>
             <div style="height: 45px;"></div>
@@ -1137,6 +1179,10 @@
           <div style="text-align: right; color: #94a3b8; align-self: flex-end;">
             <p style="margin:0;">Dokumen Rasmi Pemantauan Moderasi Digital</p>
           </div>
+        </div>
+
+        <div style="margin-top: 20px; font-size: 8px; color: #64748b; text-align: center; border-top: 1px solid #ddd; padding-top: 4px; font-weight: bold; text-transform: uppercase;">
+          HAKCIPTA UNITKO IPG KAMPUS DARULAMAN DIBANGUNKAN OLEH HANIFF FAIZAL BIN CHEK ANI
         </div>
       `;
 
