@@ -187,7 +187,8 @@
         </div>
       </section>
 
-      <section id="panelLecturerUpload" class="hidden h-full overflow-y-auto p-6 md:p-10">
+      <!-- PANAL MUAT NAIK P2 PENSYARAH (ID DIBETULKAN KEPADA panelLecUpload) -->
+      <section id="panelLecUpload" class="hidden h-full overflow-y-auto p-6 md:p-10">
         <div class="max-w-xl mx-auto">
           <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
             <div class="border-b border-slate-100 pb-5 mb-6">
@@ -320,10 +321,25 @@
     }
 
     function tukarPandangan(idPanel) {
-      ['panelAdminDashboard', 'panelWorkspace', 'panelLecturerUpload'].forEach(p => { const el = document.getElementById(p); if(el) el.classList.add('hidden'); });
+      const panelIds = {
+        'adminDashboard': 'panelAdminDashboard',
+        'workspace': 'panelWorkspace',
+        'lecUpload': 'panelLecUpload'
+      };
+
+      ['panelAdminDashboard', 'panelWorkspace', 'panelLecUpload', 'panelLecturerUpload'].forEach(p => { 
+        const el = document.getElementById(p); 
+        if(el) el.classList.add('hidden'); 
+      });
+
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      const activePanel = document.getElementById('panel' + idPanel.charAt(0).toUpperCase() + idPanel.slice(1)); if(activePanel) activePanel.classList.remove('hidden');
-      const activeNav = document.getElementById(`nav_${idPanel}`); if(activeNav) activeNav.classList.add('active');
+      
+      const targetId = panelIds[idPanel] || ('panel' + idPanel.charAt(0).toUpperCase() + idPanel.slice(1));
+      const activePanel = document.getElementById(targetId); 
+      if(activePanel) activePanel.classList.remove('hidden');
+      
+      const activeNav = document.getElementById(`nav_${idPanel}`); 
+      if(activeNav) activeNav.classList.add('active');
     }
 
     function tarikDataDariSheets() {
