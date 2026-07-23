@@ -580,7 +580,7 @@
         navContainer.innerHTML = '';
         const btnGaya = "nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-xs text-slate-600 font-medium hover:bg-slate-50 cursor-pointer w-full text-left";
         
-        // MENYEMBUNYIKAN RINGKASAN MODERASI DARIPADA PENSYARAH BIASA (HANYA UNTUK ADMIN)
+        // HANYA ADMIN DAPAT MELIHAT MENU DASHBOARD ADMIN DAN RINGKASAN MODERASI
         if (dataSesi.peranan === "Admin") {
           navContainer.innerHTML += `<button onclick="tukarPandangan('adminDashboard')" class="${btnGaya} active" id="nav_adminDashboard">Dashboard Admin</button>`;
           navContainer.innerHTML += `<button onclick="tukarPandangan('lecSummary')" class="${btnGaya}" id="nav_lecSummary">Ringkasan Moderasi</button>`;
@@ -660,6 +660,9 @@
       }
     }
 
+    // =========================================================================
+    // FUNGSI CETAKAN BORANG RASMI LAM-PT-04-02 (PENETAPAN STRICT LAJUR B VS D)
+    // =========================================================================
     function cetakBorangLamPt0402(fasaFilter = 'semua') {
       const printContainer = document.getElementById('bulkPrintContainer');
       if (!printContainer) return;
@@ -681,56 +684,42 @@
         let a = parseFloat(skrip.markahPemeriksa);
         if (isNaN(a)) a = null;
 
-        // Cari semakan P1 vs P2
-        let p1Rev = reviews.find(r => r.fasaModerasi && r.fasaModerasi.toString().toUpperCase().includes('P1'));
-        let p2Rev = reviews.find(r => r.fasaModerasi && r.fasaModerasi.toString().toUpperCase().includes('P2'));
+        let b = null, c = null, d = null, e = null;
 
-        // Jika tiada penjelas fasa pada rekod semakan tetapi ada rekod semakan:
-        if (!p1Rev && !p2Rev && reviews.length > 0) {
-          // Semakan pertama SENTIASA berada di Moderasi Pusingan 1 (b)
-          p1Rev = reviews[0];
-          if (reviews.length > 1) p2Rev = reviews[1];
-        } else if (p2Rev && !p1Rev && reviews.length === 1) {
-          // Jika hanya ada 1 semakan, ia MESTI diletakkan pada Moderasi Pusingan 1 (b)
-          p1Rev = p2Rev;
-          p2Rev = null;
-        }
+        if (reviews.length > 0) {
+          // Semakan PERTAMA bagi mana-mana skrip SENTIASA dimasukkan ke Moderasi Pusingan 1 (b)
+          const p1Rev = reviews[0];
+          let valB = (p1Rev.markahModerasiP1 !== undefined && p1Rev.markahModerasiP1 !== null && p1Rev.markahModerasiP1 !== '') 
+                     ? parseFloat(p1Rev.markahModerasiP1) 
+                     : parseFloat(p1Rev.markahAkhir);
+          if (!isNaN(valB)) {
+            b = valB;
+            if (a !== null) c = b - a;
+          }
 
-        // Pusingan 1 (b) & (c) -> SENTIASA terisi untuk semakan awal
-        let b = null, c = null;
-        if (p1Rev) {
-          let valB = p1Rev.markahModerasiP1 || p1Rev.markahAkhir;
-          if (valB !== undefined && valB !== null && valB !== '') {
-            b = parseFloat(valB);
-            if (a !== null && !isNaN(b)) c = b - a;
+          // Semakan KEDUA (jika wujud) barulah dimasukkan ke Moderasi Pusingan 2 (d)
+          if (reviews.length > 1 || (p1Rev.markahModerasiP2 !== undefined && p1Rev.markahModerasiP2 !== null && p1Rev.markahModerasiP2 !== '')) {
+            const p2Rev = reviews[1] || p1Rev;
+            let valD = (p2Rev.markahModerasiP2 !== undefined && p2Rev.markahModerasiP2 !== null && p2Rev.markahModerasiP2 !== '') 
+                       ? parseFloat(p2Rev.markahModerasiP2) 
+                       : (reviews[1] ? parseFloat(reviews[1].markahAkhir) : null);
+            if (valD !== null && !isNaN(valD)) {
+              d = valD;
+              if (a !== null) e = d - a;
+            }
+          }
+
+          // Kumpul statistik penyelarasan pensyarah
+          const lecName = p1Rev.emelPensyarah || 'Pemeriksa';
+          if (c !== null && !isNaN(c)) {
+            if (!lecturerDiffSum[lecName]) { lecturerDiffSum[lecName] = 0; lecturerDiffCount[lecName] = 0; }
+            lecturerDiffSum[lecName] += c;
+            lecturerDiffCount[lecName]++;
           }
         }
 
-        // Pusingan 2 (d) & (e) -> HANYA terisi jika ada semakan pusingan ke-2 sebenar
-        let d = null, e = null;
-        if (p2Rev) {
-          let valD = p2Rev.markahModerasiP2 || p2Rev.markahAkhir;
-          if (valD !== undefined && valD !== null && valD !== '') {
-            d = parseFloat(valD);
-            if (a !== null && !isNaN(d)) e = d - a;
-          }
-        }
-
-        // Penyelarasan (f) dan Markah Akhir (g)
         let f = (e !== null) ? e : ((c !== null) ? c : '');
         let g = (d !== null) ? d : ((b !== null) ? b : (a !== null ? a : ''));
-
-        if (p1Rev && c !== null && !isNaN(c)) {
-          const lecName = p1Rev.emelPensyarah || 'Pemeriksa';
-          if (!lecturerDiffSum[lecName]) { lecturerDiffSum[lecName] = 0; lecturerDiffCount[lecName] = 0; }
-          lecturerDiffSum[lecName] += c;
-          lecturerDiffCount[lecName]++;
-        } else if (p2Rev && e !== null && !isNaN(e)) {
-          const lecName = p2Rev.emelPensyarah || 'Pemeriksa';
-          if (!lecturerDiffSum[lecName]) { lecturerDiffSum[lecName] = 0; lecturerDiffCount[lecName] = 0; }
-          lecturerDiffSum[lecName] += e;
-          lecturerDiffCount[lecName]++;
-        }
 
         rowsHtml += `
           <tr style="border-bottom: 1px solid #000; text-align: center;">
@@ -840,7 +829,7 @@
             </div>
           </div>
 
-          <div style="margin-top: 15px; font-size: 8px; color: #64748b; text-align: center; border-top: 1px solid #ddd; padding-top: 4px; font-weight: bold; text-transform: uppercase; tracking-tight">
+          <div style="margin-top: 15px; font-size: 8px; color: #64748b; text-align: center; border-top: 1px solid #ddd; padding-top: 4px; font-weight: bold; text-transform: uppercase;">
             HAKCIPTA UNITKO IPG KAMPUS DARULAMAN DIBANGUNKAN OLEH HANIFF FAIZAL BIN CHEK ANI
           </div>
 
@@ -1401,6 +1390,9 @@
       });
     }
 
+    // =========================================================================
+    // LOGIK SIMPAN REKOD SEMAKAN: PENETAPAN WAJIB LAJUR (b) BAGI SEMAKAN PERTAMA
+    // =========================================================================
     function simpanRekodSemakan() {
       if(!pelajarAktif) return;
       simpanUlasanHalamanSemasa();
@@ -1408,9 +1400,27 @@
       const markahA = parseFloat(document.getElementById('borangMarkahA')?.value) || 0;
       const markahG = parseFloat(document.getElementById('borangMarkahG')?.value) || 0;
 
-      // SEMAKAN AWAL SENTIASA DIKATEGORIKAN SEBAGAI MODERASI PUSINGAN 1 (b)
-      const modP1 = markahG;
-      const bezP1 = (markahG - markahA);
+      // Semak rekod penilaian sedia ada bagi skrip ini
+      const rekodSediaAda = dbHasilSemakan.filter(h => h.angkaGiliran.toString() === pelajarAktif.angkaGiliran.toString());
+      
+      let modP1 = '', bezP1 = '', modP2 = '', bezP2 = '';
+
+      if (rekodSediaAda.length === 0 || (rekodSediaAda.length === 1 && rekodSediaAda[0].emelPensyarah === dataSesi.email)) {
+        // Ini SEMAKAN PERTAMA -> MESTI simpan di Lajur N (Markah Moderasi P1) & O (Beza P1)
+        modP1 = markahG;
+        bezP1 = (markahG - markahA);
+        modP2 = '';
+        bezP2 = '';
+      } else {
+        // Ini SEMAKAN KEDUA (Pusingan 2) -> Simpan di Lajur P (Markah Moderasi P2) & Q (Beza P2)
+        const p1Rec = rekodSediaAda[0];
+        modP1 = (p1Rec.markahModerasiP1 !== undefined && p1Rec.markahModerasiP1 !== '') ? p1Rec.markahModerasiP1 : p1Rec.markahAkhir;
+        bezP1 = (p1Rec.perbezaanP1 !== undefined && p1Rec.perbezaanP1 !== '') ? p1Rec.perbezaanP1 : (modP1 - markahA);
+        modP2 = markahG;
+        bezP2 = (markahG - markahA);
+      }
+
+      const markahPenyelarasan = bezP2 !== '' ? bezP2 : bezP1;
 
       const payload = {
         angkaGiliran: pelajarAktif.angkaGiliran, 
@@ -1427,9 +1437,9 @@
         t3_c3: document.getElementById('rubric_c3')?.value || 0,
         markahModerasiP1: modP1,
         perbezaanP1: bezP1,
-        markahModerasiP2: '',
-        perbezaanP2: '',
-        markahPenyelarasan: bezP1,
+        markahModerasiP2: modP2,
+        perbezaanP2: bezP2,
+        markahPenyelarasan: markahPenyelarasan,
         markahAkhir: markahG,
         dataLakaran: JSON.stringify({ annotations: lakaranSesiIni, comments: ulasanSemuaHalaman })
       };
@@ -1438,7 +1448,7 @@
       fetch(urlAPI, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
       .then(r => r.json()).then(res => {
         if(btn) { btn.innerHTML = `✓ Tersimpan!`; setTimeout(() => { btn.innerHTML = `Simpan Semakan`; btn.disabled = false; }, 2000); }
-        if(res.status === "success") { tunjukToast("Laporan berjaya disimpan.", "success"); tarikDataDariSheets(); } else { tunjukToast("Gagal: " + res.message, "error"); }
+        if(res.status === "success") { tunjukToast("Laporan berjaya disimpan ke Google Sheet.", "success"); tarikDataDariSheets(); } else { tunjukToast("Gagal: " + res.message, "error"); }
       }).catch(err => { if(btn) { btn.innerHTML = `Simpan Semakan`; btn.disabled = false; } tunjukToast("Ralat menyimpan.", "error"); });
     }
 
