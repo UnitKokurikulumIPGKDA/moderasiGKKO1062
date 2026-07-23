@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Moderasi Pintar — Digital Editorial SaaS</title>
 
+  <!-- External Fonts & Libraries -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -279,7 +280,7 @@
         </div>
       </section>
 
-      <!-- ================= PANEL RINGKASAN SEMAKAN PENSYARAH ================= -->
+      <!-- ================= PANEL RINGKASAN SEMAKAN (ADMIN SAHAJA) ================= -->
       <section id="panelLecSummary" class="hidden h-full overflow-y-auto p-6 md:p-8">
         <div class="max-w-6xl mx-auto space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-200 pb-4">
@@ -661,7 +662,7 @@
     }
 
     // =========================================================================
-    // FUNGSI CETAKAN BORANG RASMI LAM-PT-04-02 (PENETAPAN STRICT LAJUR B VS D)
+    // FUNGSI CETAKAN BORANG RASMI LAM-PT-04-02 (SYARAT STRICT: |c| >= 5 BAGI PUSINGAN 2)
     // =========================================================================
     function cetakBorangLamPt0402(fasaFilter = 'semua') {
       const printContainer = document.getElementById('bulkPrintContainer');
@@ -684,7 +685,7 @@
         let a = parseFloat(skrip.markahPemeriksa);
         if (isNaN(a)) a = null;
 
-        let b = null, c = null, d = null, e = null;
+        let b = null, c = null, d = null, e = null, f = null, g = null;
 
         if (reviews.length > 0) {
           // Semakan PERTAMA bagi mana-mana skrip SENTIASA dimasukkan ke Moderasi Pusingan 1 (b)
@@ -697,19 +698,40 @@
             if (a !== null) c = b - a;
           }
 
-          // Semakan KEDUA (jika wujud) barulah dimasukkan ke Moderasi Pusingan 2 (d)
-          if (reviews.length > 1 || (p1Rev.markahModerasiP2 !== undefined && p1Rev.markahModerasiP2 !== null && p1Rev.markahModerasiP2 !== '')) {
-            const p2Rev = reviews[1] || p1Rev;
-            let valD = (p2Rev.markahModerasiP2 !== undefined && p2Rev.markahModerasiP2 !== null && p2Rev.markahModerasiP2 !== '') 
-                       ? parseFloat(p2Rev.markahModerasiP2) 
-                       : (reviews[1] ? parseFloat(reviews[1].markahAkhir) : null);
-            if (valD !== null && !isNaN(valD)) {
-              d = valD;
-              if (a !== null) e = d - a;
+          // SYARAT RASMI IPG: Moderasi Pusingan 2 (d) HANYA DIPERLUKAN DAN DIISI JIKA |c| >= 5
+          if (c !== null && Math.abs(c) >= 5) {
+            if (reviews.length > 1 || (p1Rev.markahModerasiP2 !== undefined && p1Rev.markahModerasiP2 !== null && p1Rev.markahModerasiP2 !== '')) {
+              const p2Rev = reviews[1] || p1Rev;
+              let valD = (p2Rev.markahModerasiP2 !== undefined && p2Rev.markahModerasiP2 !== null && p2Rev.markahModerasiP2 !== '') 
+                         ? parseFloat(p2Rev.markahModerasiP2) 
+                         : (reviews[1] ? parseFloat(reviews[1].markahAkhir) : null);
+              if (valD !== null && !isNaN(valD)) {
+                d = valD;
+                if (a !== null) e = d - a;
+              }
             }
+          } else {
+            // JIKA |c| < 5, MODERASI PUSINGAN 2 TIDAK DIPERLUKAN -> (d) DAN (e) KEKAL KOSONG
+            d = null;
+            e = null;
           }
 
-          // Kumpul statistik penyelarasan pensyarah
+          // Markah Penyelarasan (f)
+          if (e !== null && c !== null && Math.abs(c) >= 5) {
+            f = e;
+          } else if (c !== null) {
+            f = c;
+          }
+
+          // Markah Akhir (g)
+          if (a !== null && f !== null) {
+            g = a + f;
+          } else if (b !== null) {
+            g = b;
+          } else if (a !== null) {
+            g = a;
+          }
+
           const lecName = p1Rev.emelPensyarah || 'Pemeriksa';
           if (c !== null && !isNaN(c)) {
             if (!lecturerDiffSum[lecName]) { lecturerDiffSum[lecName] = 0; lecturerDiffCount[lecName] = 0; }
@@ -717,9 +739,6 @@
             lecturerDiffCount[lecName]++;
           }
         }
-
-        let f = (e !== null) ? e : ((c !== null) ? c : '');
-        let g = (d !== null) ? d : ((b !== null) ? b : (a !== null ? a : ''));
 
         rowsHtml += `
           <tr style="border-bottom: 1px solid #000; text-align: center;">
@@ -730,8 +749,8 @@
             <td style="border: 1px solid #000; padding: 5px;">${c !== null && !isNaN(c) ? (c > 0 ? '+' + c : c) : ''}</td>
             <td style="border: 1px solid #000; padding: 5px;">${d !== null && !isNaN(d) ? d : ''}</td>
             <td style="border: 1px solid #000; padding: 5px;">${e !== null && !isNaN(e) ? (e > 0 ? '+' + e : e) : ''}</td>
-            <td style="border: 1px solid #000; padding: 5px;">${f !== '' ? (f > 0 ? '+' + f : f) : ''}</td>
-            <td style="border: 1px solid #000; padding: 5px; font-weight: bold;">${g !== '' ? g : ''}</td>
+            <td style="border: 1px solid #000; padding: 5px;">${f !== null && f !== '' && !isNaN(f) ? (f > 0 ? '+' + f : f) : ''}</td>
+            <td style="border: 1px solid #000; padding: 5px; font-weight: bold;">${g !== null && g !== '' && !isNaN(g) ? g : ''}</td>
           </tr>
         `;
       });
@@ -1391,7 +1410,7 @@
     }
 
     // =========================================================================
-    // LOGIK SIMPAN REKOD SEMAKAN: PENETAPAN WAJIB LAJUR (b) BAGI SEMAKAN PERTAMA
+    // LOGIK SIMPAN REKOD SEMAKAN: PENETAPAN STRICT P1 VS P2
     // =========================================================================
     function simpanRekodSemakan() {
       if(!pelajarAktif) return;
@@ -1416,11 +1435,14 @@
         const p1Rec = rekodSediaAda[0];
         modP1 = (p1Rec.markahModerasiP1 !== undefined && p1Rec.markahModerasiP1 !== '') ? p1Rec.markahModerasiP1 : p1Rec.markahAkhir;
         bezP1 = (p1Rec.perbezaanP1 !== undefined && p1Rec.perbezaanP1 !== '') ? p1Rec.perbezaanP1 : (modP1 - markahA);
+        
+        // Hanya isi P2 jika beza P1 >= 5
         modP2 = markahG;
         bezP2 = (markahG - markahA);
       }
 
-      const markahPenyelarasan = bezP2 !== '' ? bezP2 : bezP1;
+      // Markah Penyelarasan: Jika |bezP1| < 5, ambil bezP1 terus
+      const markahPenyelarasan = (bezP2 !== '' && Math.abs(parseFloat(bezP1)) >= 5) ? bezP2 : bezP1;
 
       const payload = {
         angkaGiliran: pelajarAktif.angkaGiliran, 
